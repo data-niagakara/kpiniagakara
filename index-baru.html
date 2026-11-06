@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KPI Daily Work — PT Niagakara Mitra Juara</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--brand:#4f46e5;--ok:#047857;--okb:#ecfdf5;--err:#be123c;--errb:#fff1f2;--warn:#b45309;--warnb:#fffbeb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.hidden{display:none!important}
+.wrap{max-width:1000px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+h1{font-size:17px;margin:0}h2{font-size:15px;margin:0 0 8px}
+.mut{color:var(--mut);font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sp{justify-content:space-between}
+button,select,input,textarea{font:inherit}
+input,select,textarea{border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;background:#fff;max-width:100%}
+textarea{width:100%}
+.btn{border:0;border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer;background:var(--brand);color:#fff}
+.btn.o{background:#fff;color:#334155;border:1px solid #cbd5e1}
+.btn.r{background:var(--errb);color:var(--err);border:1px solid #fecdd3}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #a5b4fc;outline-offset:1px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font-weight:600;color:var(--mut);cursor:pointer;white-space:nowrap}
+.tabs button.on{color:var(--brand);border-color:var(--brand)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi b{display:block;font-size:26px}
+.tag{display:inline-block;font-size:11px;font-weight:600;border-radius:99px;padding:2px 8px;background:#f1f5f9;color:#334155}
+.tag.ok{background:var(--okb);color:var(--ok)}.tag.warn{background:var(--warnb);color:var(--warn)}.tag.err{background:var(--errb);color:var(--err)}
+.bar{height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--brand)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);font-size:13px}
+th{color:var(--mut);font-weight:600}
+.task{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;display:grid;gap:8px}
+.task.lock{background:#f0fdf9;border-color:#a7f3d0}.task.od{background:#fff7f8;border-color:#fecdd3}
+.task input,.task select{width:100%}
+label{display:block;font-size:12px;font-weight:600;color:#334155;margin:8px 0 4px}
+#toast{position:fixed;left:12px;right:12px;bottom:12px;max-width:420px;margin:auto;background:#0f172a;color:#fff;padding:10px 14px;border-radius:10px;z-index:9}
+#toast.e{background:var(--err)}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login .card{max-width:400px;width:100%;text-align:center}
+</style>
+</head>
+<body>
+
+<div id="login" class="login hidden">
+  <div class="card">
+    <h1>KPI Daily Work Niagakara</h1>
+    <p class="mut">PT Niagakara Mitra Juara. Masuk dengan akun Google yang sudah didaftarkan Admin.</p>
+    <div id="loginErr" class="hidden" style="background:var(--errb);color:var(--err);border:1px solid #fecdd3;border-radius:10px;padding:10px;font-size:13px;margin-bottom:12px"></div>
+    <button id="btnLogin" class="btn" style="width:100%;padding:12px" type="button">Masuk dengan Google</button>
+  </div>
+</div>
+
+<div id="app" class="wrap hidden">
+  <div class="card row sp">
+    <div><h1>PT Niagakara Mitra Juara</h1><div id="who" class="mut"></div></div>
+    <button id="btnLogout" class="btn o" type="button">Keluar</button>
+  </div>
+
+  <div class="card row">
+    <span class="mut">Dari</span><input type="date" id="fromD" />
+    <span class="mut">Sampai</span><input type="date" id="toD" />
+    <button class="btn o" id="bToday" type="button">Hari ini</button>
+    <button class="btn o" id="bMonth" type="button">Bulan ini</button>
+    <select id="fUser" class="hidden"></select>
+  </div>
+
+  <div class="tabs">
+    <button data-tab="dash" class="on">Dashboard & KPI</button>
+    <button data-tab="plan">Input Kerjaan</button>
+    <button data-tab="upd">Update Status & Bukti</button>
+  </div>
+
+  <section id="t-dash">
+    <div class="card row" style="gap:20px">
+      <div class="kpi"><span class="mut">Skor KPI</span><b id="kScore">0%</b><span id="kPts" class="mut"></span></div>
+      <div class="grid" style="flex:1;min-width:260px">
+        <div class="kpi"><span class="mut">Total</span><b id="kTotal">0</b></div>
+        <div class="kpi"><span class="mut">Selesai</span><b id="kDone">0</b></div>
+        <div class="kpi"><span class="mut">In Progress</span><b id="kProg">0</b></div>
+        <div class="kpi"><span class="mut">Pending</span><b id="kPend">0</b></div>
+        <div class="kpi"><span class="mut">Tertinggal</span><b id="kOver">0</b></div>
+        <div class="kpi"><span class="mut">Selesai tanpa bukti</span><b id="kNoProof">0</b></div>
+      </div>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <h2>Rekap per anggota</h2>
+      <table><thead><tr><th>Nama</th><th>Dept</th><th>Total</th><th>Beres sah</th><th>Kurang bukti</th><th>Sisa</th><th style="min-width:130px">Skor KPI</th></tr></thead><tbody id="recap"></tbody></table>
+    </div>
+  </section>
+
+  <section id="t-plan" class="hidden">
+    <div class="card">
+      <div class="row sp"><h2>Input Rencana Kerjaan</h2><button id="bSop" class="btn o" type="button">Muat semua SOP departemen</button></div>
+      <form id="fAdd">
+        <label for="pMember">Anggota</label><select id="pMember" style="width:100%"></select>
+        <label for="pSop">Pilih SOP default (opsional)</label><select id="pSop" style="width:100%"></select>
+        <label for="pTitle">Nama kerjaan</label><textarea id="pTitle" rows="2" required></textarea>
+        <div class="row">
+          <div><label for="pDate">Tanggal</label><input type="date" id="pDate" /></div>
+          <div><label for="pProof">Syarat bukti</label><select id="pProof"><option value="none">Tanpa bukti</option><option value="screenshot">Screenshot (1 foto)</option><option value="link">Link URL</option></select></div>
+          <div><label for="pPrio">Prioritas</label><select id="pPrio"><option value="High">High (3 poin)</option><option value="Medium" selected>Medium (2 poin)</option><option value="Low">Low (1 poin)</option></select></div>
+        </div>
+        <label for="pHint">Panduan keterangan</label><input id="pHint" style="width:100%" />
+        <div style="margin-top:12px"><button class="btn" type="submit">+ Tambah ke daftar kerjaan</button></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="t-upd" class="hidden">
+    <div class="card row sp">
+      <h2 style="margin:0">Update Status & Bukti</h2>
+      <select id="fStatus"><option value="ALL">Semua status</option><option value="OD">Tertinggal / belum beres</option><option value="Done">Done</option><option value="In Progress">In Progress</option><option value="Pending">Pending</option></select>
+    </div>
+    <div id="list"></div>
+  </section>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script>
+const SB_URL='https://bycwklaelbgyjbzpwwaq.supabase.co';
+const SB_KEY='sb_publishable_StRRHo4DHtfaGmQB-ur7uw_7J2Lw3Uo';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=id=>document.getElementById(id);
+const W={High:3,Medium:2,Low:1};
+const HARI=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+const FC='Follow up customer melalui chat.',
+ FT='Follow up customer melalui telepon, khususnya customer yang belum fix order.',
+ WI='Melakukan input pesanan customer ke Webot dan memastikan data pesanan lengkap.',
+ TR='Melakukan tracking resi, memonitor status pengiriman, dan menindaklanjuti paket bermasalah.',
+ OA='Optimasi anggaran berdasarkan performa', LB='Input laporan budget harian', CB='Membuat creative baru';
+const J={
+ 'CRM':[['Menyimpan data customer ke folder CRM dan kontak Gmail serta memisahkan database sesuai kebutuhan.','none','Medium'],['Blasting SOP H+1–H+60, SOP tertunda, resi H+1, Harbolnas, Payday, dan cross-selling.','screenshot','High'],[FC,'none','Medium'],[FT,'screenshot','High'],['Membuat status WhatsApp.','screenshot','Low'],[WI,'none','High'],[TR,'screenshot','High']],
+ 'Customer Service':[['Lead Handling, Merespon lead yang baru masuk','none','High'],[FC,'none','Medium'],[FT,'screenshot','High'],['Membuat Status Whatsapp','screenshot','Low'],[WI,'none','High'],[TR,'screenshot','High'],['Labeling Customer baik dengan label maupun order created.','none','Medium'],['Input laporan harian','none','Medium']],
+ 'Advertiser Shopee':[['Monitoring dan evaluasi performa Shopee','none','High'],[OA,'none','High'],[LB,'none','Medium'],['Pembaruan creative','link','High'],['Pencarian Affiliate potensial','screenshot','Medium'],['Monitoring chat pada toko shopee','none','Low']],
+ 'Advertiser Tiktokshop':[['Monitoring dan evaluasi performa tiktokshop','none','High'],[OA,'none','High'],[LB,'none','Medium'],[CB,'link','High'],['Evaluasi performa creative','screenshot','Medium'],['Pencarian affiliate potensial','screenshot','Medium'],['Monitoring chat pada toko','none','Low']],
+ 'Advertiser Meta':[['Monitoring dan evaluasi performa ads','none','High'],[OA,'none','High'],[LB,'none','Medium'],[CB,'link','High'],['Optimasi landing page','screenshot','High'],['Testing creative baru','screenshot','Medium'],['Koordinasi dengan CS','none','Low']],
+ 'Finance':[['Rekonsiliasi mutasi bank & verifikasi pembayaran masuk harian','link','High'],['Verifikasi budget iklan harian Advertiser (Meta, Shopee, TikTok)','none','High'],['Input laporan kas & pengeluaran operasional harian','screenshot','Medium']]
+};
+
+const S={me:null,users:[],tasks:[],from:'',to:'',uid:'ALL'};
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>ymd(new Date());
+const nowWib=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())+' WIB'};
+function fmt(s){const [y,m,d]=s.split('-').map(Number);return HARI[new Date(y,m-1,d).getDay()]+', '+pad(d)+' '+BLN[m-1]+' '+y}
+function esc(s){const d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML.replace(/"/g,'&quot;')}
+const isAdmin=()=>S.me&&S.me.role==='ADMIN';
+let tt;
+function toast(msg,err){const t=$('toast');t.textContent=msg;t.className=err?'e':'';clearTimeout(tt);tt=setTimeout(()=>t.classList.add('hidden'),3500)}
+
+/* ---------- LOGIN ---------- */
+function showLogin(err){
+  $('app').classList.add('hidden');$('login').classList.remove('hidden');
+  const e=$('loginErr');e.textContent=err||'';e.classList.toggle('hidden',!err);
+}
+$('btnLogin').onclick=async()=>{
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+  if(error)showLogin('Gagal mulai login: '+error.message);
+};
+$('btnLogout').onclick=async()=>{await sb.auth.signOut();S.me=null;showLogin()};
+
+async function enter(session){
+  const email=String(session.user.email||'').toLowerCase();
+  const {data:us,error}=await sb.from('users').select('*').order('name');
+  if(error){showLogin('Gagal membaca data user: '+error.message);return}
+  const me=us.find(u=>String(u.email).toLowerCase()===email);
+  if(!me){await sb.auth.signOut();showLogin('Akses ditolak: email '+email+' belum didaftarkan Admin.');return}
+  S.me=me;S.users=us;S.from=S.to=today();S.uid=isAdmin()?'ALL':me.id;
+  $('login').classList.add('hidden');$('app').classList.remove('hidden');
+  $('who').textContent=me.name+' · '+(isAdmin()?'Admin':me.division);
+  $('fromD').value=S.from;$('toD').value=S.to;$('pDate').value=today();
+  const staff=us.filter(u=>u.role!=='ADMIN');
+  const fu=$('fUser');
+  if(isAdmin()){
+    fu.classList.remove('hidden');
+    fu.innerHTML='<option value="ALL">Semua anggota ('+staff.length+')</option>'+staff.map(u=>`<option value="${u.id}">${esc(u.name)} — ${esc(u.division)}</option>`).join('');
+  }
+  const pm=$('pMember');
+  const list=isAdmin()?staff:[me];
+  pm.innerHTML=list.map(u=>`<option value="${u.id}">${esc(u.name)} (${esc(u.division)})</option>`).join('');
+  pm.disabled=!isAdmin();
+  fillSop();
+  await loadTasks();
+}
+
+/* ---------- DATA ---------- */
+async function loadTasks(){
+  let q=sb.from('tasks').select('*').gte('task_date',S.from).lte('task_date',S.to)
+    .order('task_date',{ascending:false}).order('created_at',{ascending:false});
+  if(S.uid!=='ALL')q=q.eq('member_id',S.uid);
+  const {data,error}=await q;
+  if(error){toast('Gagal memuat kerjaan: '+error.message,1);return}
+  S.tasks=data;render();
+}
+async function patch(id,f){
+  const {data,error}=await sb.from('tasks').update(f).eq('id',id).select();
+  if(error||!data.length){toast('Gagal menyimpan'+(error?': '+error.message:' (tidak punya izin)'),1);await loadTasks();return}
+  const i=S.tasks.findIndex(t=>t.id===id);if(i>-1)S.tasks[i]=data[0];
+  render();toast('Tersimpan');
+}
+function mk(m,d,title,proof,prio,hint){
+  return{id:'nk_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),task_date:d,input_time:nowWib(),
+    member_id:m.id,category:m.division,title,priority:prio,proof_type:proof,target_output:hint||'',status:'In Progress',is_locked:false};
+}
+async function addRows(rows,d){
+  const {error}=await sb.from('tasks').insert(rows);
+  if(error){toast('Gagal menambah: '+error.message,1);return false}
+  if(d<S.from){S.from=d;$('fromD').value=d}
+  if(d>S.to){S.to=d;$('toD').value=d}
+  await loadTasks();return true;
+}
+
+/* ---------- KPI ---------- */
+const proofOk=t=>t.proof_type==='none'||(t.proof_type==='link'&&(t.proof_link||'').trim()!=='')||(t.proof_type==='screenshot'&&!!t.proof_image_path);
+function metrics(list){
+  const m={total:list.length,ok:0,no:0,prog:0,pend:0,over:0,max:0,pts:0};
+  list.forEach(t=>{
+    const w=W[t.priority]||2;m.max+=w;
+    if(t.status!=='Done'&&t.task_date<today())m.over++;
+    if(t.status==='Done'){if(proofOk(t)){m.ok++;m.pts+=w}else{m.no++;m.pts+=w*.5}}
+    else if(t.status==='In Progress')m.prog++;else m.pend++;
+  });
+  m.kpi=m.max?Math.round(m.pts/m.max*100):0;return m;
+}
+
+/* ---------- RENDER ---------- */
+function render(){renderDash();renderList()}
+function renderDash(){
+  const m=metrics(S.tasks);
+  $('kScore').textContent=m.kpi+'%';$('kPts').textContent=m.pts+' dari '+m.max+' poin';
+  $('kTotal').textContent=m.total;$('kDone').textContent=m.ok+m.no;$('kProg').textContent=m.prog;
+  $('kPend').textContent=m.pend;$('kOver').textContent=m.over;$('kNoProof').textContent=m.no;
+  const members=(isAdmin()?S.users.filter(u=>u.role!=='ADMIN'):[S.me]).filter(u=>S.uid==='ALL'||u.id===S.uid);
+  $('recap').innerHTML=members.map(u=>{
+    const s=metrics(S.tasks.filter(t=>t.member_id===u.id));
+    return `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.division)}</td><td>${s.total}</td><td>${s.ok}</td><td>${s.no}</td><td>${s.prog+s.pend}</td>
+      <td><b>${s.kpi}%</b><div class="bar"><i style="width:${s.kpi}%"></i></div></td></tr>`;
+  }).join('')||'<tr><td colspan="7" class="mut">Belum ada data.</td></tr>';
+}
+function card(t){
+  const m=S.users.find(u=>u.id===t.member_id)||{name:'?'};
+  const mine=isAdmin()||t.member_id===S.me.id;
+  const edit=mine&&!t.is_locked, dis=edit?'':' disabled';
+  const od=t.status!=='Done'&&t.task_date<today();
+  let proof;
+  if(t.proof_type==='link'){
+    const l=(t.proof_link||'').trim(), href=/^https?:\/\//i.test(l)?l:'https://'+l;
+    proof=`<div class="row"><input data-lnk="${t.id}" value="${esc(t.proof_link)}" placeholder="Tempel link bukti" style="flex:1"${dis}>`+(l?`<a href="${esc(href)}" target="_blank" rel="noopener">Buka link</a>`:'<span class="tag warn">Wajib link</span>')+'</div>';
+  }else if(t.proof_type==='screenshot'){
+    proof='<span class="tag warn">Wajib 1 foto — upload foto aktif di tahap 3</span>';
+  }else proof='<span class="tag">Tanpa bukti</span>';
+  const canDel=isAdmin()||(mine&&!t.is_locked);
+  return `<div class="task ${t.is_locked?'lock':od?'od':''}">
+    <div class="row sp"><div class="row"><span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span><span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}</div>
+    ${canDel?`<button class="btn r" data-del="${t.id}" type="button">Hapus</button>`:''}</div>
+    <div><b>${esc(t.title)}</b><div class="mut">${esc(t.target_output||'')}</div></div>
+    <select data-st="${t.id}"${dis}><option value="Done"${t.status==='Done'?' selected':''}>Done (beres)</option><option value="In Progress"${t.status==='In Progress'?' selected':''}>In Progress</option><option value="Pending"${t.status==='Pending'?' selected':''}>Pending</option></select>
+    ${proof}
+    <input data-nt="${t.id}" value="${esc(t.notes)}" placeholder="Keterangan / catatan"${dis}>
+    ${mine?`<button class="btn ${t.is_locked?'o':''}" data-lock="${t.id}" type="button">${t.is_locked?'Buka kunci (edit)':'Ceklis & kunci'}</button>`:'<span class="mut">Hanya lihat</span>'}
+  </div>`;
+}
+function renderList(){
+  const f=$('fStatus').value;
+  const rows=S.tasks.filter(t=>f==='ALL'||(f==='OD'?(t.status!=='Done'||t.task_date<today()):t.status===f));
+  $('list').innerHTML=rows.map(card).join('')||'<div class="card mut">Belum ada kerjaan di periode ini. Buka tab Input Kerjaan, lalu klik "Muat semua SOP departemen".</div>';
+}
+
+/* ---------- EVENTS ---------- */
+$('list').addEventListener('change',e=>{
+  const el=e.target;
+  if(el.dataset.st)patch(el.dataset.st,{status:el.value});
+  else if(el.dataset.lnk)patch(el.dataset.lnk,{proof_link:el.value.trim()});
+  else if(el.dataset.nt)patch(el.dataset.nt,{notes:el.value});
+});
+$('list').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.lock){
+    const t=S.tasks.find(x=>x.id===b.dataset.lock);if(!t)return;
+    await patch(t.id,t.is_locked?{is_locked:false}:{status:'Done',is_locked:true});
+  }else if(b.dataset.del){
+    if(!confirm('Hapus kerjaan ini?'))return;
+    const {data,error}=await sb.from('tasks').delete().eq('id',b.dataset.del).select();
+    if(error||!data.length){toast('Gagal menghapus'+(error?': '+error.message:' (tidak punya izin)'),1);return}
+    S.tasks=S.tasks.filter(x=>x.id!==b.dataset.del);render();toast('Kerjaan dihapus');
+  }
+});
+$('fStatus').onchange=renderList;
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  ['dash','plan','upd'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
+});
+
+$('fromD').onchange=e=>{S.from=e.target.value;if(S.to<S.from){S.to=S.from;$('toD').value=S.to}loadTasks()};
+$('toD').onchange=e=>{S.to=e.target.value;if(S.from>S.to){S.from=S.to;$('fromD').value=S.from}loadTasks()};
+$('bToday').onclick=()=>{S.from=S.to=today();$('fromD').value=$('toD').value=S.from;loadTasks()};
+$('bMonth').onclick=()=>{
+  const n=new Date();S.from=ymd(new Date(n.getFullYear(),n.getMonth(),1));S.to=ymd(new Date(n.getFullYear(),n.getMonth()+1,0));
+  $('fromD').value=S.from;$('toD').value=S.to;loadTasks();
+};
+$('fUser').onchange=e=>{S.uid=e.target.value;loadTasks()};
+
+function curMember(){return S.users.find(u=>u.id===$('pMember').value)||S.me}
+function fillSop(){
+  const m=curMember(),jobs=J[m.division]||[];
+  $('pSop').innerHTML='<option value="">Ketik kerjaan sendiri (di luar SOP)</option>'+jobs.map((j,i)=>`<option value="${i}">${esc(j[0].slice(0,70))}</option>`).join('');
+}
+$('pMember').onchange=fillSop;
+$('pSop').onchange=e=>{
+  const j=(J[curMember().division]||[])[e.target.value];if(!j)return;
+  $('pTitle').value=j[0];$('pProof').value=j[1];$('pPrio').value=j[2];
+};
+$('fAdd').onsubmit=async e=>{
+  e.preventDefault();
+  const m=curMember(),d=$('pDate').value||today(),title=$('pTitle').value.trim();if(!title)return;
+  if(await addRows([mk(m,d,title,$('pProof').value,$('pPrio').value,$('pHint').value.trim())],d)){
+    $('pTitle').value='';$('pSop').value='';toast('Kerjaan ditambahkan');
+  }
+};
+$('bSop').onclick=async()=>{
+  const m=curMember(),jobs=J[m.division]||[],d=$('pDate').value||today();
+  if(!jobs.length){toast('Departemen ini belum punya SOP default',1);return}
+  const {data:ex,error}=await sb.from('tasks').select('title').eq('member_id',m.id).eq('task_date',d);
+  if(error){toast('Gagal cek data: '+error.message,1);return}
+  const have=new Set((ex||[]).map(x=>x.title));
+  const rows=jobs.filter(j=>!have.has(j[0])).map(j=>mk(m,d,j[0],j[1],j[2],''));
+  if(!rows.length){toast('Semua SOP tanggal itu sudah ada');return}
+  if(await addRows(rows,d)){
+    document.querySelector('.tabs button[data-tab="upd"]').click();
+    toast(rows.length+' kerjaan SOP ditambahkan untuk '+m.name);
+  }
+};
+
+/* ---------- START ---------- */
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  if(data.session)await enter(data.session);else showLogin();
+})();
+</script>
+</body>
+</html>
