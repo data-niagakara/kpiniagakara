@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tes Login — KPI Niagakara</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+  :root { --bg:#f8fafc; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --brand:#4f46e5; --ok:#047857; --okbg:#ecfdf5; --err:#be123c; --errbg:#fff1f2; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+  .card { width:100%; max-width:420px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  p { margin:0 0 16px; font-size:13px; color:var(--muted); line-height:1.5; }
+  button { width:100%; padding:12px; border-radius:12px; border:0; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-main { background:var(--brand); color:#fff; }
+  .btn-main:hover { background:#4338ca; }
+  .btn-out { background:#fff; color:#334155; border:1px solid #cbd5e1; margin-top:12px; }
+  button:focus-visible { outline:3px solid #a5b4fc; outline-offset:2px; }
+  .box { border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.6; margin-bottom:12px; }
+  .ok { background:var(--okbg); color:var(--ok); border:1px solid #a7f3d0; }
+  .err { background:var(--errbg); color:var(--err); border:1px solid #fecdd3; }
+  .info { background:#f1f5f9; color:#334155; border:1px solid var(--line); }
+  .hidden { display:none; }
+  dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:4px 12px; }
+  dt { color:var(--muted); } dd { margin:0; font-weight:600; word-break:break-all; }
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>Tes Login KPI Niagakara</h1>
+  <p>Halaman ini cuma buat mengecek login Google dan daftar user di Supabase. Dashboard lama tidak berubah.</p>
+
+  <div id="msg" class="box info">Memeriksa sesi login...</div>
+
+  <section id="viewLogin" class="hidden">
+    <button id="btnLogin" class="btn-main" type="button">Masuk dengan Google</button>
+  </section>
+
+  <section id="viewOk" class="hidden">
+    <div class="box ok">Login berhasil dan email terdaftar.</div>
+    <div class="box info"><dl id="detail"></dl></div>
+    <button id="btnLogout" class="btn-out" type="button">Keluar</button>
+  </section>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://bycwklaelbgyjbzpwwaq.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_StRRHo4DHtfaGmQB-ur7uw_7J2Lw3Uo';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const $ = id => document.getElementById(id);
+
+  function setMsg(text, kind) {
+    const el = $('msg');
+    el.textContent = text;
+    el.className = 'box ' + (kind || 'info');
+    el.classList.toggle('hidden', !text);
+  }
+
+  function showLogin() {
+    $('viewLogin').classList.remove('hidden');
+    $('viewOk').classList.add('hidden');
+  }
+
+  async function checkWhitelist(session) {
+    const email = String(session.user.email || '').toLowerCase();
+    setMsg('Mengecek email ' + email + ' ...');
+
+    const { data: users, error } = await sb.from('users').select('*');
+    if (error) {
+      setMsg('Gagal membaca tabel users: ' + error.message, 'err');
+      showLogin();
+      return;
+    }
+
+    const me = (users || []).find(u => String(u.email).toLowerCase() === email);
+    if (!me) {
+      await sb.auth.signOut();
+      setMsg('Akses ditolak: email ' + email + ' belum didaftarkan Admin. Kamu sudah otomatis keluar.', 'err');
+      showLogin();
+      return;
+    }
+
+    const t = await sb.from('tasks').select('id', { count: 'exact', head: true });
+    const d = await sb.from('departments').select('name');
+
+    $('detail').innerHTML = '';
+    const rows = [
+      ['Nama', me.name],
+      ['Email', me.email],
+      ['Departemen', me.division],
+      ['Role', me.role],
+      ['User terlihat', users.length + (me.role === 'ADMIN' ? ' (admin: semua)' : ' (staff: hanya diri sendiri)')],
+      ['Departemen', d.error ? 'error' : d.data.length],
+      ['Kerjaan terlihat', t.error ? 'error' : t.count]
+    ];
+    rows.forEach(([k, v]) => {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      $('detail').append(dt, dd);
+    });
+
+    setMsg('');
+    $('viewLogin').classList.add('hidden');
+    $('viewOk').classList.remove('hidden');
+  }
+
+  $('btnLogin').addEventListener('click', async () => {
+    setMsg('Mengarahkan ke Google...');
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.origin + location.pathname }
+    });
+    if (error) setMsg('Gagal mulai login: ' + error.message, 'err');
+  });
+
+  $('btnLogout').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    setMsg('Kamu sudah keluar.');
+    showLogin();
+  });
+
+  (async () => {
+    const { data } = await sb.auth.getSession();
+    if (data.session) {
+      await checkWhitelist(data.session);
+    } else {
+      setMsg('');
+      showLogin();
+    }
+  })();
+</script>
+</body>
+</html>
