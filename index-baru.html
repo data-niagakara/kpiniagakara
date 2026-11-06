@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>KPI Daily Work — PT Niagakara Mitra Juara</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--brand:#4f46e5;--ok:#047857;--okb:#ecfdf5;--err:#be123c;--errb:#fff1f2;--warn:#b45309;--warnb:#fffbeb}
 *{box-sizing:border-box}
@@ -39,6 +40,31 @@ th{color:var(--mut);font-weight:600}
 label{display:block;font-size:12px;font-weight:600;color:#334155;margin:8px 0 4px}
 #toast{position:fixed;left:12px;right:12px;bottom:12px;max-width:420px;margin:auto;background:#0f172a;color:#fff;padding:10px 14px;border-radius:10px;z-index:9}
 #toast.e{background:var(--err)}
+body{background:linear-gradient(180deg,#e0e7ff 0,#f8fafc 260px) fixed}
+.card{border-radius:16px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.06)}
+.top{background:linear-gradient(135deg,#1e1b4b,#4338ca 60%,#6366f1);color:#fff;border:0}
+.top h1{color:#fff;font-size:19px}.top .mut{color:#c7d2fe}
+.top .btn.o{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.35)}
+.av{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.btn{background:linear-gradient(135deg,#4f46e5,#6366f1);transition:transform .1s,box-shadow .15s}
+.btn:hover{box-shadow:0 4px 12px rgba(79,70,229,.3)}.btn:active{transform:scale(.98)}
+.btn.o,.btn.r{box-shadow:none}.btn.o{background:#fff}.btn.r{background:var(--errb)}
+.tabs{background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.tabs button{border-radius:10px;border-bottom:0;padding:9px 14px}
+.tabs button.on{background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff}
+.stat{border-radius:16px;padding:14px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:110px}
+.stat span{font-size:12px;font-weight:700;opacity:.92}.stat b{font-size:30px;line-height:1.1}.stat em{font-style:normal;font-size:11px;opacity:.9}
+.s1{background:linear-gradient(135deg,#64748b,#1e293b)}.s2{background:linear-gradient(135deg,#34d399,#047857)}
+.s3{background:linear-gradient(135deg,#fbbf24,#d97706)}.s4{background:linear-gradient(135deg,#fb7185,#be123c)}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px;margin-bottom:12px}
+.g2 .card{margin-bottom:0}
+.gauge{text-align:center}.gauge svg{width:100%;max-width:270px}
+.chartbox{position:relative;height:250px}
+.task{border-left:4px solid #94a3b8;box-shadow:0 1px 2px rgba(15,23,42,.04)}.task.lock{border-left-color:#10b981}.task.od{border-left-color:#f43f5e}
+.bar{height:10px}.bar i{background:linear-gradient(90deg,#6366f1,#10b981)}
+th{background:#f8fafc;font-size:11px;text-transform:none}
+.login{background:linear-gradient(135deg,#1e1b4b,#4338ca 60%,#6366f1)}
+.login img{width:72px;height:72px;object-fit:contain;border-radius:16px;background:#fff;padding:6px;margin-bottom:10px}
 #modal{position:fixed;inset:0;background:rgba(15,23,42,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:8}
 #modal .box{background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:14px}
 #modal img{max-width:100%;border-radius:8px;display:block;margin:8px 0}
@@ -50,6 +76,7 @@ label{display:block;font-size:12px;font-weight:600;color:#334155;margin:8px 0 4p
 
 <div id="login" class="login hidden">
   <div class="card">
+    <img src="https://cdn.phototourl.com/member/2026-08-18-34756943-176f-45a8-8a61-3de896b78097.jpg" alt="Logo PT Niagakara Mitra Juara" />
     <h1>KPI Daily Work Niagakara</h1>
     <p class="mut">PT Niagakara Mitra Juara. Masuk dengan akun Google yang sudah didaftarkan Admin.</p>
     <div id="loginErr" class="hidden" style="background:var(--errb);color:var(--err);border:1px solid #fecdd3;border-radius:10px;padding:10px;font-size:13px;margin-bottom:12px"></div>
@@ -58,8 +85,8 @@ label{display:block;font-size:12px;font-weight:600;color:#334155;margin:8px 0 4p
 </div>
 
 <div id="app" class="wrap hidden">
-  <div class="card row sp">
-    <div><h1>PT Niagakara Mitra Juara</h1><div id="who" class="mut"></div></div>
+  <div class="card top row sp">
+    <div class="row" style="flex-wrap:nowrap"><div id="av" class="av"></div><div><h1>PT Niagakara Mitra Juara</h1><div id="who" class="mut"></div></div></div>
     <button id="btnLogout" class="btn o" type="button">Keluar</button>
   </div>
 
@@ -80,20 +107,40 @@ label{display:block;font-size:12px;font-weight:600;color:#334155;margin:8px 0 4p
   </div>
 
   <section id="t-dash">
-    <div class="card row" style="gap:20px">
-      <div class="kpi"><span class="mut">Skor KPI</span><b id="kScore">0%</b><span id="kPts" class="mut"></span></div>
-      <div class="grid" style="flex:1;min-width:260px">
-        <div class="kpi"><span class="mut">Total</span><b id="kTotal">0</b></div>
-        <div class="kpi"><span class="mut">Selesai</span><b id="kDone">0</b></div>
-        <div class="kpi"><span class="mut">In Progress</span><b id="kProg">0</b></div>
-        <div class="kpi"><span class="mut">Pending</span><b id="kPend">0</b></div>
-        <div class="kpi"><span class="mut">Tertinggal</span><b id="kOver">0</b></div>
-        <div class="kpi"><span class="mut">Selesai tanpa bukti</span><b id="kNoProof">0</b></div>
+    <div class="g2">
+      <div class="card gauge">
+        <div class="row sp"><b>Skor KPI Akhir</b><span id="kGrade" class="tag ok">Excellent</span></div>
+        <svg viewBox="0 0 200 118" role="img" aria-label="Odometer skor KPI">
+          <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#f1f5f9" stroke-width="18" stroke-linecap="round"/>
+          <path pathLength="100" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#f43f5e" stroke-width="18" stroke-dasharray="50 100" opacity=".25"/>
+          <path pathLength="100" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#f59e0b" stroke-width="18" stroke-dasharray="30 100" stroke-dashoffset="-50" opacity=".3"/>
+          <path pathLength="100" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#10b981" stroke-width="18" stroke-dasharray="20 100" stroke-dashoffset="-80" opacity=".3"/>
+          <path id="odoArc" pathLength="100" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#4f46e5" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 100"/>
+          <text x="10" y="116" font-size="9" fill="#94a3b8" font-weight="600">0%</text>
+          <text x="91" y="12" font-size="9" fill="#94a3b8" font-weight="600">50%</text>
+          <text x="166" y="116" font-size="9" fill="#94a3b8" font-weight="600">100%</text>
+          <g id="needle" style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform .7s cubic-bezier(.34,1.56,.64,1)">
+            <polygon points="97,100 103,100 100,34" fill="#1e293b"/><circle cx="100" cy="100" r="7" fill="#4f46e5" stroke="#fff" stroke-width="2.5"/>
+          </g>
+        </svg>
+        <div id="kScore" style="font-size:32px;font-weight:800;margin-top:-14px">0%</div>
+        <div id="kPts" class="mut"></div>
+        <div class="mut" style="margin-top:8px">Validitas bukti: <b id="kProof">100%</b></div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="stat s1"><span>Total Task</span><b id="kTotal">0</b><em id="kLock"></em></div>
+        <div class="stat s2"><span>Completed</span><b id="kDone">0</b><em id="kDoneSub"></em></div>
+        <div class="stat s3"><span>On Progress</span><b id="kProg">0</b><em id="kProgSub"></em></div>
+        <div class="stat s4"><span>On Pending</span><b id="kPend">0</b><em id="kPendSub"></em></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card"><h2>Skor KPI & penyelesaian per anggota</h2><div class="chartbox"><canvas id="cBar"></canvas></div></div>
+      <div class="card"><h2>Proporsi status kerjaan</h2><div class="chartbox"><canvas id="cPie"></canvas></div></div>
     </div>
     <div class="card" style="overflow-x:auto">
       <h2>Rekap per anggota</h2>
-      <table><thead><tr><th>Nama</th><th>Dept</th><th>Total</th><th>Beres sah</th><th>Kurang bukti</th><th>Sisa</th><th style="min-width:130px">Skor KPI</th></tr></thead><tbody id="recap"></tbody></table>
+      <table><thead><tr><th>Nama</th><th>Dept</th><th>Total</th><th>Beres sah</th><th>Kurang bukti</th><th>Sisa</th><th style="min-width:140px">Skor KPI</th></tr></thead><tbody id="recap"></tbody></table>
     </div>
   </section>
 
@@ -132,6 +179,7 @@ label{display:block;font-size:12px;font-weight:600;color:#334155;margin:8px 0 4p
         <label for="uName">Nama lengkap</label><input id="uName" required style="width:100%" />
         <label for="uEmail">Email akun Google</label><input type="email" id="uEmail" required style="width:100%" />
         <label for="uDiv">Departemen / jabatan</label><select id="uDiv" style="width:100%"></select>
+        <input id="uCustom" class="hidden" placeholder="Tulis nama departemen / jabatan baru" style="width:100%;margin-top:6px" />
         <label for="uRole">Hak akses</label>
         <select id="uRole" style="width:100%"><option value="MEMBER">Staff / Member (hanya data sendiri)</option><option value="ADMIN">Admin (semua data & kelola user)</option></select>
         <div class="row" style="margin-top:12px">
@@ -217,6 +265,7 @@ async function enter(session){
   $('login').classList.add('hidden');$('app').classList.remove('hidden');
   $('who').textContent=me.name+' · '+(isAdmin()?'Admin':me.division);
   document.querySelector('.tabs button[data-tab="users"]').classList.toggle('hidden',!isAdmin());
+  $('av').textContent=me.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   $('fromD').value=S.from;$('toD').value=S.to;$('pDate').value=today();
   const staff=us.filter(u=>u.role!=='ADMIN');
   const fu=$('fUser');
@@ -274,17 +323,39 @@ function metrics(list){
 
 /* ---------- RENDER ---------- */
 function render(){renderDash();renderList()}
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+let bar=null,pie=null;
 function renderDash(){
-  const m=metrics(S.tasks);
-  $('kScore').textContent=m.kpi+'%';$('kPts').textContent=m.pts+' dari '+m.max+' poin';
-  $('kTotal').textContent=m.total;$('kDone').textContent=m.ok+m.no;$('kProg').textContent=m.prog;
-  $('kPend').textContent=m.pend;$('kOver').textContent=m.over;$('kNoProof').textContent=m.no;
+  const m=metrics(S.tasks),done=m.ok+m.no;
+  $('kScore').textContent=m.kpi+'%';$('kPts').textContent=m.pts+' dari '+m.max+' poin bobot';
+  const g=m.kpi>=85?['Excellent','ok']:m.kpi>=70?['On Track','warn']:['Evaluasi','err'];
+  $('kGrade').textContent=g[0];$('kGrade').className='tag '+g[1];
+  $('needle').style.transform='rotate('+(-90+Math.min(100,m.kpi)*1.8)+'deg)';
+  const arc=$('odoArc');arc.setAttribute('stroke-dasharray',m.kpi+' 100');
+  arc.setAttribute('stroke',m.kpi>=85?'#10b981':m.kpi>=70?'#4f46e5':'#f43f5e');
+  $('kProof').textContent=(done?Math.round(m.ok/done*100):100)+'%';
+  $('kTotal').textContent=m.total;$('kLock').textContent=S.tasks.filter(t=>t.is_locked).length+' sudah dikunci';
+  $('kDone').textContent=done;$('kDoneSub').textContent=pct(done,m.total)+'% selesai · '+m.no+' kurang bukti';
+  $('kProg').textContent=m.prog;$('kProgSub').textContent=pct(m.prog,m.total)+'% sedang dikerjakan';
+  $('kPend').textContent=m.pend;$('kPendSub').textContent=m.over+' tertinggal dari hari lalu';
   const members=(isAdmin()?S.users.filter(u=>u.role!=='ADMIN'):[S.me]).filter(u=>S.uid==='ALL'||u.id===S.uid);
-  $('recap').innerHTML=members.map(u=>{
-    const s=metrics(S.tasks.filter(t=>t.member_id===u.id));
+  const st=members.map(u=>metrics(S.tasks.filter(t=>t.member_id===u.id)));
+  $('recap').innerHTML=members.map((u,i)=>{
+    const s=st[i],c=s.kpi>=85?'#10b981':s.kpi>=70?'#6366f1':'#f59e0b';
     return `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.division)}</td><td>${s.total}</td><td>${s.ok}</td><td>${s.no}</td><td>${s.prog+s.pend}</td>
-      <td><b>${s.kpi}%</b><div class="bar"><i style="width:${s.kpi}%"></i></div></td></tr>`;
+      <td><b>${s.kpi}%</b><div class="bar"><i style="width:${s.kpi}%;background:${c}"></i></div></td></tr>`;
   }).join('')||'<tr><td colspan="7" class="mut">Belum ada data.</td></tr>';
+  if(!window.Chart)return;
+  if(bar)bar.destroy();if(pie)pie.destroy();
+  bar=new Chart($('cBar'),{type:'bar',data:{labels:members.map(u=>u.name.split(' ').slice(0,2).join(' ')),datasets:[
+    {label:'Skor KPI (%)',data:st.map(s=>s.kpi),backgroundColor:'#6366f1',borderRadius:10,borderSkipped:false},
+    {label:'Penyelesaian (%)',data:st.map(s=>pct(s.ok+s.no,s.total)),backgroundColor:'#10b981',borderRadius:10,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10}}},
+      scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
+  const cnt=[m.ok,m.no,m.prog,m.pend],has=cnt.some(v=>v>0);
+  pie=new Chart($('cPie'),{type:'doughnut',data:{labels:['Done sah','Done kurang bukti','In Progress','Pending'],datasets:[{
+    data:has?cnt:[1,0,0,0],backgroundColor:has?['#10b981','#f43f5e','#f59e0b','#94a3b8']:['#e2e8f0','#e2e8f0','#e2e8f0','#e2e8f0'],borderWidth:3,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:10}}}}});
 }
 function card(t){
   const m=S.users.find(u=>u.id===t.member_id)||{name:'?'};
@@ -346,6 +417,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
   ['dash','plan','upd','users'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
   if(b.dataset.tab==='users')renderUsers();
+  if(b.dataset.tab==='dash')renderDash();
 });
 
 $('fromD').onchange=e=>{S.from=e.target.value;if(S.to<S.from){S.to=S.from;$('toD').value=S.to}loadTasks()};
@@ -438,12 +510,12 @@ async function loadDepts(){
 }
 function fillDepts(){
   const cur=$('uDiv').value;
-  $('uDiv').innerHTML=S.depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  $('uDiv').innerHTML=S.depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('')+'<option value="__NEW__">+ Tulis departemen / jabatan sendiri...</option>';
   if(S.depts.includes(cur))$('uDiv').value=cur;
 }
 function resetUserForm(){
   $('uId').value='';$('uName').value='';$('uEmail').value='';
-  $('uRole').value='MEMBER';if(S.depts.length)$('uDiv').selectedIndex=0;
+  $('uRole').value='MEMBER';if(S.depts.length)$('uDiv').selectedIndex=0;$('uCustom').value='';$('uCustom').classList.add('hidden');
   $('uTitle').textContent='Tambah User Baru';$('uSubmit').textContent='+ Tambah user';$('uCancel').classList.add('hidden');
 }
 function renderUsers(){
@@ -473,12 +545,25 @@ async function refreshUsers(){
   await loadTasks();
 }
 $('uSearch').oninput=renderUsers;
-$('uDiv').onchange=e=>{$('uRole').value=e.target.value==='Admin'?'ADMIN':'MEMBER'};
+$('uDiv').onchange=e=>{
+  const v=e.target.value;$('uCustom').classList.toggle('hidden',v!=='__NEW__');
+  if(v==='__NEW__')$('uCustom').focus();else $('uRole').value=v==='Admin'?'ADMIN':'MEMBER';
+};
 $('uCancel').onclick=resetUserForm;
 $('fUserForm').onsubmit=async e=>{
   e.preventDefault();
   if(!isAdmin())return;
-  const id=$('uId').value,name=$('uName').value.trim(),email=$('uEmail').value.trim().toLowerCase(),division=$('uDiv').value;
+  const id=$('uId').value,name=$('uName').value.trim(),email=$('uEmail').value.trim().toLowerCase();
+  let division=$('uDiv').value;
+  if(division==='__NEW__'){
+    const n=$('uCustom').value.trim();if(!n){toast('Tulis nama departemen / jabatan barunya',1);return}
+    const ex=S.depts.find(d=>d.toLowerCase()===n.toLowerCase());
+    if(ex)division=ex;else{
+      const {error}=await sb.from('departments').insert({name:n});
+      if(error){toast('Gagal menambah departemen: '+error.message,1);return}
+      S.depts.push(n);division=n;fillDepts();
+    }
+  }
   let role=$('uRole').value;if(division==='Admin')role='ADMIN';
   if(!name||!email)return;
   if(S.users.some(u=>u.email.toLowerCase()===email&&u.id!==id)){toast('Email sudah dipakai user lain',1);return}
