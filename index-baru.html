@@ -75,6 +75,7 @@ label{display:block;font-size:12px;font-weight:600;color:#334155;margin:8px 0 4p
     <button data-tab="dash" class="on">Dashboard & KPI</button>
     <button data-tab="plan">Input Kerjaan</button>
     <button data-tab="upd">Update Status & Bukti</button>
+    <button data-tab="users" class="hidden">User</button>
   </div>
 
   <section id="t-dash">
@@ -119,6 +120,33 @@ label{display:block;font-size:12px;font-weight:600;color:#334155;margin:8px 0 4p
       <select id="fStatus"><option value="ALL">Semua status</option><option value="OD">Tertinggal / belum beres</option><option value="Done">Done</option><option value="In Progress">In Progress</option><option value="Pending">Pending</option></select>
     </div>
     <div id="list"></div>
+  </section>
+
+  <section id="t-users" class="hidden">
+    <div class="card">
+      <h2 id="uTitle">Tambah User Baru</h2>
+      <p class="mut" style="margin-top:0">Hanya email Google yang terdaftar di sini yang bisa login.</p>
+      <form id="fUserForm">
+        <input type="hidden" id="uId" />
+        <label for="uName">Nama lengkap</label><input id="uName" required style="width:100%" />
+        <label for="uEmail">Email akun Google</label><input type="email" id="uEmail" required style="width:100%" />
+        <label for="uDiv">Departemen / jabatan</label><select id="uDiv" style="width:100%"></select>
+        <label for="uRole">Hak akses</label>
+        <select id="uRole" style="width:100%"><option value="MEMBER">Staff / Member (hanya data sendiri)</option><option value="ADMIN">Admin (semua data & kelola user)</option></select>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="uSubmit" type="submit">+ Tambah user</button>
+          <button class="btn o hidden" id="uCancel" type="button">Batal edit</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Tambah departemen / jabatan baru</h2>
+      <div class="row"><input id="dName" placeholder="Contoh: Content Creator" style="flex:1" /><button class="btn o" id="dAdd" type="button">Tambah departemen</button></div>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <div class="row sp"><h2 style="margin:0">Daftar user</h2><input id="uSearch" placeholder="Cari nama / email / departemen" /></div>
+      <table style="margin-top:8px"><thead><tr><th>Nama</th><th>Email</th><th>Departemen</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="uBody"></tbody></table>
+    </div>
   </section>
 </div>
 
@@ -183,9 +211,11 @@ async function enter(session){
   if(error){showLogin('Gagal membaca data user: '+error.message);return}
   const me=us.find(u=>String(u.email).toLowerCase()===email);
   if(!me){await sb.auth.signOut();showLogin('Akses ditolak: email '+email+' belum didaftarkan Admin.');return}
+  await loadDepts();
   S.me=me;S.users=us;S.from=S.to=today();S.uid=isAdmin()?'ALL':me.id;
   $('login').classList.add('hidden');$('app').classList.remove('hidden');
   $('who').textContent=me.name+' · '+(isAdmin()?'Admin':me.division);
+  document.querySelector('.tabs button[data-tab="users"]').classList.toggle('hidden',!isAdmin());
   $('fromD').value=S.from;$('toD').value=S.to;$('pDate').value=today();
   const staff=us.filter(u=>u.role!=='ADMIN');
   const fu=$('fUser');
@@ -313,7 +343,8 @@ $('fStatus').onchange=renderList;
 
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
-  ['dash','plan','upd'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
+  ['dash','plan','upd','users'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
+  if(b.dataset.tab==='users')renderUsers();
 });
 
 $('fromD').onchange=e=>{S.from=e.target.value;if(S.to<S.from){S.to=S.from;$('toD').value=S.to}loadTasks()};
@@ -396,6 +427,97 @@ async function viewProof(id){
 $('fileIn').onchange=e=>{const f=e.target.files&&e.target.files[0];if(f&&upId)uploadProof(upId,f)};
 $('mClose').onclick=()=>{$('modal').classList.add('hidden');$('mImg').src=''};
 $('modal').onclick=e=>{if(e.target.id==='modal')$('mClose').click()};
+
+/* ---------- MENU USER (ADMIN) ---------- */
+S.depts=[];
+async function loadDepts(){
+  const {data}=await sb.from('departments').select('name').order('name');
+  S.depts=(data&&data.length)?data.map(d=>d.name):Object.keys(J).concat('Admin');
+  fillDepts();
+}
+function fillDepts(){
+  const cur=$('uDiv').value;
+  $('uDiv').innerHTML=S.depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  if(S.depts.includes(cur))$('uDiv').value=cur;
+}
+function resetUserForm(){
+  $('uId').value='';$('uName').value='';$('uEmail').value='';
+  $('uRole').value='MEMBER';if(S.depts.length)$('uDiv').selectedIndex=0;
+  $('uTitle').textContent='Tambah User Baru';$('uSubmit').textContent='+ Tambah user';$('uCancel').classList.add('hidden');
+}
+function renderUsers(){
+  if(!isAdmin())return;
+  const q=($('uSearch').value||'').toLowerCase();
+  const rows=S.users.filter(u=>!q||(u.name+' '+u.email+' '+u.division).toLowerCase().includes(q));
+  $('uBody').innerHTML=rows.map(u=>`<tr>
+    <td><b>${esc(u.name)}</b>${u.id===S.me.id?' <span class="tag ok">Kamu</span>':''}</td>
+    <td>${esc(u.email)}</td><td>${esc(u.division)}</td>
+    <td><span class="tag ${u.role==='ADMIN'?'warn':'ok'}">${u.role==='ADMIN'?'Admin':'Staff'}</span></td>
+    <td><div class="row"><button class="btn o" data-uedit="${u.id}" type="button">Edit</button>`
+    +(u.id===S.me.id?'':`<button class="btn r" data-udel="${u.id}" type="button">Hapus</button>`)+'</div></td></tr>').join('')
+    ||'<tr><td colspan="5" class="mut">Tidak ada user yang cocok.</td></tr>';
+}
+async function refreshUsers(){
+  const {data,error}=await sb.from('users').select('*').order('name');
+  if(error){toast('Gagal memuat user: '+error.message,1);return}
+  S.users=data;
+  const staff=data.filter(u=>u.role!=='ADMIN');
+  if(S.uid!=='ALL'&&!staff.some(u=>u.id===S.uid))S.uid='ALL';
+  $('fUser').innerHTML='<option value="ALL">Semua anggota ('+staff.length+')</option>'+staff.map(u=>`<option value="${u.id}">${esc(u.name)} — ${esc(u.division)}</option>`).join('');
+  $('fUser').value=S.uid;
+  const pv=$('pMember').value;
+  $('pMember').innerHTML=staff.map(u=>`<option value="${u.id}">${esc(u.name)} (${esc(u.division)})</option>`).join('');
+  if(staff.some(u=>u.id===pv))$('pMember').value=pv;
+  fillSop();renderUsers();
+  await loadTasks();
+}
+$('uSearch').oninput=renderUsers;
+$('uDiv').onchange=e=>{$('uRole').value=e.target.value==='Admin'?'ADMIN':'MEMBER'};
+$('uCancel').onclick=resetUserForm;
+$('fUserForm').onsubmit=async e=>{
+  e.preventDefault();
+  if(!isAdmin())return;
+  const id=$('uId').value,name=$('uName').value.trim(),email=$('uEmail').value.trim().toLowerCase(),division=$('uDiv').value;
+  let role=$('uRole').value;if(division==='Admin')role='ADMIN';
+  if(!name||!email)return;
+  if(S.users.some(u=>u.email.toLowerCase()===email&&u.id!==id)){toast('Email sudah dipakai user lain',1);return}
+  if(id===S.me.id&&email!==S.me.email.toLowerCase()){toast('Email akunmu sendiri tidak boleh diubah dari sini (nanti kamu terkunci keluar)',1);return}
+  if(id===S.me.id&&role!=='ADMIN'){toast('Role akunmu sendiri tidak boleh diturunkan',1);return}
+  const r=id?await sb.from('users').update({name,email,division,role}).eq('id',id).select()
+            :await sb.from('users').insert({name,email,division,role}).select();
+  if(r.error||!r.data.length){toast('Gagal menyimpan user'+(r.error?': '+r.error.message:''),1);return}
+  const wasEdit=!!id;resetUserForm();
+  toast(wasEdit?'Data user diperbarui':'User ditambahkan, sudah bisa login');
+  await refreshUsers();
+};
+$('uBody').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.uedit){
+    const u=S.users.find(x=>x.id===b.dataset.uedit);if(!u)return;
+    $('uId').value=u.id;$('uName').value=u.name;$('uEmail').value=u.email;
+    $('uDiv').value=u.division;$('uRole').value=u.role;
+    $('uTitle').textContent='Edit User: '+u.name;$('uSubmit').textContent='Simpan perubahan';
+    $('uCancel').classList.remove('hidden');$('uName').focus();
+  }else if(b.dataset.udel){
+    const id=b.dataset.udel,u=S.users.find(x=>x.id===id);
+    if(!u||id===S.me.id)return;
+    if(!confirm('Hapus '+u.name+'? Semua kerjaan dan foto buktinya ikut terhapus.'))return;
+    const {data,error}=await sb.from('users').delete().eq('id',id).select();
+    if(error||!data.length){toast('Gagal menghapus user'+(error?': '+error.message:' (tidak punya izin)'),1);return}
+    const {data:files}=await sb.storage.from('proofs').list(id,{limit:1000});
+    if(files&&files.length)await sb.storage.from('proofs').remove(files.map(f=>id+'/'+f.name));
+    toast('User dihapus, akses loginnya dicabut');
+    await refreshUsers();
+  }
+});
+$('dAdd').onclick=async()=>{
+  const n=$('dName').value.trim();if(!n)return;
+  if(S.depts.some(d=>d.toLowerCase()===n.toLowerCase())){toast('Departemen sudah ada',1);return}
+  const {error}=await sb.from('departments').insert({name:n});
+  if(error){toast('Gagal menambah departemen: '+error.message,1);return}
+  S.depts.push(n);$('dName').value='';fillDepts();$('uDiv').value=n;
+  toast('Departemen "'+n+'" ditambahkan');
+};
 
 /* ---------- START ---------- */
 (async()=>{
