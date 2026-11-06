@@ -1,0 +1,79 @@
+      document.getElementById('btnResetDummy').addEventListener('click', () => {
+        state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+        state.tasks = buildInitialTasks();
+        state.startDate = RUNNING_TODAY;
+        state.endDate = RUNNING_TODAY;
+        startInp.value = RUNNING_TODAY;
+        endInp.value = RUNNING_TODAY;
+        saveState();
+        renderAll();
+        showToast('Data KPI PT Niagakara Mitra Juara di-reset ke awal');
+      });
+
+      document.getElementById('btnExportCsv').addEventListener('click', exportToCsv);
+
+      document.getElementById('formGoogleGateLogin').addEventListener('submit', e => {
+        e.preventDefault();
+        loginByEmail(document.getElementById('gateEmailInput').value);
+      });
+      document.getElementById('btnLogoutGoogle').addEventListener('click', logoutGoogleAccount);
+
+      // Cloud Sync Modal Handlers
+      const codeArea = document.getElementById('appsScriptCodeArea');
+      if (codeArea) codeArea.value = APPS_SCRIPT_CODE;
+      updateCloudSyncBadgeUI();
+
+      document.getElementById('btnOpenCloudSyncModal').addEventListener('click', () => {
+        updateCloudSyncBadgeUI();
+        document.getElementById('cloudSyncModal').classList.remove('hidden');
+      });
+      document.getElementById('btnCloseCloudModal').addEventListener('click', () => {
+        document.getElementById('cloudSyncModal').classList.add('hidden');
+      });
+      document.getElementById('btnCloseCloudModalBottom').addEventListener('click', () => {
+        document.getElementById('cloudSyncModal').classList.add('hidden');
+      });
+
+      document.getElementById('btnSaveCloudUrl').addEventListener('click', () => {
+        const val = document.getElementById('cloudWebAppUrlInput').value.trim() || DEFAULT_LOCKED_SHEET_URL;
+        cloudWebAppUrl = val;
+        isCloudUrlLocked = true;
+        writePersistentStore('niagakara_cloud_webapp_url', cloudWebAppUrl);
+        writePersistentStore('niagakara_cloud_locked', 'true');
+        updateCloudSyncBadgeUI();
+        pushStateToCloudSheets();
+        showToast('🔒 Koneksi Cloud Google Sheets berhasil dipasang & dikunci permanen di site!');
+      });
+
+      document.getElementById('btnUnlockCloudUrl').addEventListener('click', () => {
+        isCloudUrlLocked = false;
+        writePersistentStore('niagakara_cloud_locked', 'false');
+        updateCloudSyncBadgeUI();
+        document.getElementById('cloudWebAppUrlInput').focus();
+        showToast('🔓 Kunci URL dibuka. Silakan ubah URL lalu klik "Pasang & Kunci di Site".');
+      });
+
+      document.getElementById('btnPullFromCloud').addEventListener('click', () => {
+        pullStateFromCloudSheets(true);
+      });
+
+      document.getElementById('btnCopyAppsScript').addEventListener('click', () => {
+        const area = document.getElementById('appsScriptCodeArea');
+        area.select();
+        try {
+          document.execCommand('copy');
+          showToast('📋 Kode Google Apps Script (Code.gs) berhasil disalin!');
+        } catch (e) {
+          showToast('Silakan salin teks dari kotak kode.');
+        }
+      });
+
+      if (cloudWebAppUrl) {
+        pullStateFromCloudSheets(false);
+      }
+
+      renderAll();
+    });
+  </script>
+</body>
+</html>
