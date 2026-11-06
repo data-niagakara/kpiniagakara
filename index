@@ -1,0 +1,3126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PT Niagakara Mitra Juara</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 5px;
+      width: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- FULL-SCREEN GOOGLE LOGIN GATE (HANYA KOLOM EMAIL & TOMBOL LOGIN) -->
+  <div id="loginGateScreen" class="min-h-screen flex flex-col justify-center items-center px-4 py-6 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-6 text-center border-b border-slate-100 bg-slate-50/70">
+        <div class="w-20 h-20 rounded-2xl bg-white border border-slate-200 p-2 flex items-center justify-center mx-auto mb-3 shadow-sm overflow-hidden">
+          <img src="https://cdn.phototourl.com/member/2026-08-18-34756943-176f-45a8-8a61-3de896b78097.jpg" alt="Logo PT Niagakara Mitra Juara" class="max-w-full h-auto max-h-16 object-contain rounded-lg" />
+        </div>
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-100 text-indigo-800 mb-1">
+          PT Niagakara Mitra Juara
+        </div>
+        <h1 class="text-lg sm:text-xl font-bold text-slate-900">KPI Daily Work Niagakara</h1>
+        <p class="text-xs text-slate-500 mt-1">Masukkan email Akun Google yang telah terdaftar oleh Admin</p>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <form id="formGoogleGateLogin" class="space-y-4">
+          <div>
+            <label for="gateEmailInput" class="block text-xs font-semibold text-slate-700 mb-1.5">Alamat Email Google Terdaftar</label>
+            <div class="relative">
+              <input type="email" id="gateEmailInput" required placeholder="Masukkan email Google Anda..." class="w-full rounded-xl border border-slate-300 pl-10 pr-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <span class="absolute left-3.5 top-3.5">
+                <svg class="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/>
+                </svg>
+              </span>
+            </div>
+            <p id="gateLoginError" class="hidden text-xs text-rose-600 font-medium mt-2 bg-rose-50 border border-rose-200 rounded-lg p-2.5"></p>
+          </div>
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-3 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+            <span>Masuk dengan Akun Google</span>
+            <span>→</span>
+          </button>
+        </form>
+
+        <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-[11px] text-slate-500 leading-relaxed flex items-start gap-2">
+          <span class="text-emerald-600 font-bold shrink-0">🔒</span>
+          <span><strong>PT Niagakara Mitra Juara:</strong> Hanya email yang sudah terdaftar di bagian Admin (Menu User) yang dapat masuk ke dashboard.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP SHELL (ULTRA-COMPACT TANPA HEADER BESAR YANG MENGGANGGU) -->
+  <div id="appShell" class="hidden min-h-screen flex flex-col">
+
+    <!-- Compact Navigation & Filter Bar (Tidak Sticky / Hemat Ruang di HP) -->
+    <div class="bg-white border-b border-slate-200">
+      <!-- Single-Line Top Bar: Mini Logo + Navigation Tabs + Filter Toggle + Logout -->
+      <div class="max-w-7xl mx-auto px-2.5 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <img src="https://cdn.phototourl.com/member/2026-08-18-34756943-176f-45a8-8a61-3de896b78097.jpg" alt="Logo" class="w-7 h-7 object-contain rounded border border-slate-200 shrink-0" />
+          <span class="text-xs sm:text-sm font-bold text-slate-900 truncate">PT Niagakara Mitra Juara</span>
+          <span id="headerDeptBadge" class="hidden sm:inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">Portal</span>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <!-- Toggle Filter Kalender Button (Hemat Tempat di HP) -->
+          <button type="button" id="btnToggleFilterDrawer" class="inline-flex items-center gap-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg transition">
+            <span>📅 Filter</span>
+            <span id="filterDrawerArrow">▾</span>
+          </button>
+
+          <button id="btnOpenCloudSyncModal" type="button" class="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1.5 rounded-lg transition" title="Koneksi Database Google Sheets Terkunci Permanen">
+            <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="cloudTopBtnText">☁️ Cloud Sheets</span>
+          </button>
+
+          <button id="btnExportCsv" type="button" class="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg transition" title="Download CSV">
+            <span class="hidden sm:inline">Export </span><span>CSV</span><span class="hidden sm:inline"> (Spreadsheet)</span>
+          </button>
+
+          <button id="btnLogoutGoogle" type="button" class="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1.5 rounded-lg transition">
+            <span>Keluar (Logout)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hidden/Subtle Active User Text for internal state binding -->
+      <div class="hidden">
+        <span id="activeGoogleName">-</span>
+        <span id="activeGoogleEmail">-</span>
+      </div>
+
+      <!-- Collapsible Calendar Filter Panel (Bisa Dibuka/Tutup agar Layar HP Lega) -->
+      <div id="collapsibleFilterPanel" class="bg-slate-50 border-t border-slate-200/80 px-2.5 sm:px-5 py-2.5">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
+            <!-- Tanggal Awal -->
+            <div class="flex items-center bg-white rounded-lg px-2 py-1.5 border border-slate-300 gap-1">
+              <span class="text-[10px] text-slate-400 font-medium">Awal:</span>
+              <input type="date" id="filterDate" class="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none w-full" value="2026-11-04" />
+            </div>
+
+            <!-- Tanggal Akhir -->
+            <div class="flex items-center bg-white rounded-lg px-2 py-1.5 border border-slate-300 gap-1">
+              <span class="text-[10px] text-slate-400 font-medium">Akhir:</span>
+              <input type="date" id="filterEndDate" class="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none w-full" value="2026-11-04" />
+            </div>
+
+            <!-- Filter Bulan & Tahun -->
+            <div class="col-span-2 sm:col-span-1 flex items-center bg-white rounded-lg px-2 py-1.5 border border-slate-300 gap-1">
+              <span class="text-[10px] text-slate-400 font-medium">Bln/Thn:</span>
+              <select id="filterMonth" class="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none flex-1">
+                <option value="CUSTOM">Sesuai Tanggal</option>
+                <option value="01">Januari</option>
+                <option value="02">Februari</option>
+                <option value="03">Maret</option>
+                <option value="04">April</option>
+                <option value="05">Mei</option>
+                <option value="06">Juni</option>
+                <option value="07">Juli</option>
+                <option value="08">Agustus</option>
+                <option value="09">September</option>
+                <option value="10">Oktober</option>
+                <option value="11" selected>November</option>
+                <option value="12">Desember</option>
+              </select>
+              <select id="filterYear" class="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+            </div>
+
+            <!-- Preset Filter Buttons -->
+            <div class="col-span-2 flex flex-wrap items-center gap-1.5">
+              <button type="button" id="btnPresetToday" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                Hari Berjalan (4 Nov)
+              </button>
+              <button type="button" id="btnPresetFullMonth" class="text-[11px] font-medium px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
+                1 Bulan Penuh
+              </button>
+              <button type="button" id="btnPresetOverdue" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 transition">
+                ⚠️ Lacak Harian Tertinggal
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <select id="filterUser" class="w-full sm:w-auto bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="ALL">Semua Anggota Tim</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Full-Width Scrollable & Touch Friendly di HP) -->
+      <div class="max-w-7xl mx-auto px-2 sm:px-5 flex items-center justify-between gap-2 overflow-x-auto border-t border-slate-100 bg-white custom-scrollbar">
+        <div class="flex items-center gap-0.5 sm:gap-1 w-full sm:w-auto">
+          <button type="button" data-tab="dashboard" class="tab-btn flex-1 sm:flex-initial text-center px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap transition">
+            1. Dashboard Utama & KPI
+          </button>
+          <button type="button" data-tab="plan" class="tab-btn flex-1 sm:flex-initial text-center px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap transition">
+            2. Input List Kerjaan (Plan Pagi)
+          </button>
+          <button type="button" data-tab="update" class="tab-btn flex-1 sm:flex-initial text-center px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap transition flex items-center justify-center gap-1">
+            <span>3. Update Status & Bukti (Spreadsheet View)</span>
+            <span id="badgeUnverified" class="px-1.5 py-0.5 text-[10px] rounded-full bg-rose-100 text-rose-700 font-bold">0</span>
+          </button>
+          <button type="button" id="tabBtnUsers" data-tab="users" class="tab-btn hidden flex-1 sm:flex-initial text-center px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap transition flex items-center justify-center gap-1">
+            <span>👤 User</span>
+            <span id="badgeTotalUsers" class="px-1.5 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-bold">12</span>
+          </button>
+        </div>
+        <div id="activePeriodLabel" class="hidden xl:flex items-center gap-1.5 text-[11px] font-medium text-slate-500 py-1 shrink-0">
+          <span>Periode: Rabu, 04 Nov 2026</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Container (Padding lega di HP px-2.5 sm:px-5) -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-5 py-3.5 sm:py-5 space-y-4 sm:space-y-5">
+
+      <!-- Banner Informasi Dihilangkan Sesuai Revisi (Kontrol Aksi Cepat Ditempatkan Ringkas) -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2 text-xs text-slate-600">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="compactUserSummary" class="font-semibold text-slate-800">Login aktif</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button type="button" id="btnLoadDeptDefaults" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1.5 rounded-lg transition">
+            ⚡ Muat SOP Harian Departemen Saya
+          </button>
+          <button id="btnQuickAddModal" type="button" class="text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg transition shadow-2xs">
+            + Tambah Kerjaan Baru
+          </button>
+          <button id="btnClearAllTasksAdmin" type="button" class="hidden text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg transition" title="Khusus Admin: Bersihkan seluruh daftar catatan kerjaan dummy">
+            🗑️ Hapus Semua Kerjaan Dummy
+          </button>
+          <button id="btnResetDummy" type="button" class="text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 px-2 py-1.5 rounded-lg transition">
+            Reset Data
+          </button>
+        </div>
+      </div>
+      <!-- Hidden legacy elements so no ID reference breaks -->
+      <div id="bannerRestoreBar" class="hidden">
+        <button type="button" id="btnQuickLoadSopMini">⚡ Muat SOP</button>
+        <button type="button" id="btnRestoreBanner">Tampilkan Banner Info ▾</button>
+      </div>
+      <div id="accountPermissionBanner" class="hidden">
+        <button type="button" id="btnDismissBanner">✕</button>
+        <div id="bannerAvatar"></div>
+        <span id="bannerAccountTitle"></span>
+        <span id="bannerRoleBadge"></span>
+        <p id="bannerPermissionDesc"></p>
+      </div>
+
+      <!-- TAB 1: DASHBOARD UTAMA & KPI -->
+      <section id="view-dashboard" class="space-y-4 sm:space-y-5">
+        <!-- Row 1: Odometer Skor KPI Akhir + 4 Kartu Status Task (Total Task, Completed Task, Task on Progress, Task on Pending) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4">
+
+          <!-- Grafik Odometer Skor KPI Akhir (lg:col-span-4) -->
+          <div class="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-2xs flex flex-col items-center justify-between">
+            <div class="w-full flex items-center justify-between mb-1">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Skor KPI Akhir</span>
+                <p id="kpiPointsDetail" class="text-[11px] text-slate-500">0 dari 0 poin bobot</p>
+              </div>
+              <span id="kpiScoreGrade" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Excellent</span>
+            </div>
+
+            <!-- Odometer / Speedometer SVG Gauge with Animated Needle -->
+            <div class="relative w-full max-w-[230px] pt-1 flex flex-col items-center">
+              <svg viewBox="0 0 200 115" class="w-full h-auto overflow-visible">
+                <!-- Background Track Arc -->
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#f1f5f9" stroke-width="18" stroke-linecap="round" />
+                <!-- Red Zone (0 - 50%) -->
+                <path d="M 20 100 A 80 80 0 0 1 100 20" fill="none" stroke="#f43f5e" stroke-width="18" stroke-linecap="round" stroke-dasharray="126 300" opacity="0.22" />
+                <!-- Amber Zone (50 - 80%) -->
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#f59e0b" stroke-width="18" stroke-dasharray="75 300" stroke-dashoffset="-126" opacity="0.25" />
+                <!-- Green Zone (80 - 100%) -->
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#10b981" stroke-width="18" stroke-linecap="round" stroke-dasharray="51 300" stroke-dashoffset="-201" opacity="0.25" />
+
+                <!-- Active Value Arc -->
+                <path id="odometerArcPath" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#4f46e5" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 300" />
+
+                <!-- Scale Labels -->
+                <text x="12" y="113" fill="#94a3b8" font-size="9" font-weight="600">0%</text>
+                <text x="92" y="11" fill="#94a3b8" font-size="9" font-weight="600">50%</text>
+                <text x="172" y="113" fill="#94a3b8" font-size="9" font-weight="600">100%</text>
+
+                <!-- Odometer Needle Group (pivots around 100,100) -->
+                <g id="odometerNeedle" transform="rotate(-90 100 100)" style="transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                  <polygon points="97,100 103,100 100,32" fill="#1e293b" />
+                  <circle cx="100" cy="100" r="7" fill="#4f46e5" stroke="#ffffff" stroke-width="2.5" />
+                </g>
+              </svg>
+
+              <div class="-mt-2 text-center">
+                <span id="kpiScoreValue" class="text-2xl sm:text-3xl font-extrabold text-slate-900">0%</span>
+              </div>
+            </div>
+
+            <!-- Validitas Bukti Compact Footer inside Odometer Card -->
+            <div class="w-full pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500">Validitas Bukti (<strong id="kpiProofRate" class="text-slate-800">0%</strong>):</span>
+              <span id="kpiProofWarning" class="text-emerald-600 font-semibold">✓ Bukti valid</span>
+            </div>
+            <!-- Hidden legacy bar elements -->
+            <div id="kpiScoreBar" class="hidden"></div>
+            <div id="kpiProofBar" class="hidden"></div>
+          </div>
+
+          <!-- 4 Kartu Status Task: Total Task, Completed Task, Task on Progress, Task on Pending (lg:col-span-8) -->
+          <div class="lg:col-span-8 grid grid-cols-2 sm:grid-cols-2 gap-2.5 sm:gap-3.5">
+
+            <!-- Card 1: Total Task -->
+            <div class="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">Total Task</span>
+                <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs">📋</span>
+              </div>
+              <div class="my-2">
+                <div class="flex items-baseline gap-1.5">
+                  <span id="kpiTotalTaskCount" class="text-2xl sm:text-3xl font-bold text-slate-900">0</span>
+                  <span class="text-xs text-slate-500 font-medium">pekerjaan</span>
+                </div>
+                <p id="kpiVerifiedDetail" class="text-[11px] text-slate-500 mt-1">0 sudah dikunci (ceklis)</p>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-slate-600 h-full rounded-full w-full"></div>
+              </div>
+            </div>
+
+            <!-- Card 2: Completed Task -->
+            <div class="bg-white rounded-xl p-3.5 sm:p-4 border border-emerald-200/80 shadow-2xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-emerald-700">Completed Task</span>
+                <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">✓</span>
+              </div>
+              <div class="my-2">
+                <div class="flex flex-wrap items-baseline gap-1.5">
+                  <span id="kpiDoneCount" class="text-2xl sm:text-3xl font-bold text-slate-900">0</span>
+                  <span id="kpiDonePercent" class="text-xs font-semibold text-emerald-600">(0% Selesai)</span>
+                </div>
+                <p id="kpiCompletedSub" class="text-[11px] text-slate-500 mt-1">0 lengkap bukti, 0 kurang bukti</p>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div id="kpiDoneBar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Card 3: Task on Progress -->
+            <div class="bg-white rounded-xl p-3.5 sm:p-4 border border-amber-200/80 shadow-2xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-amber-700">Task on Progress</span>
+                <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">⏳</span>
+              </div>
+              <div class="my-2">
+                <div class="flex flex-wrap items-baseline gap-1.5">
+                  <span id="kpiOnProgressCount" class="text-2xl sm:text-3xl font-bold text-slate-900">0</span>
+                  <span id="kpiOnProgressPercent" class="text-xs font-semibold text-amber-600">(0%)</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Sedang dikerjakan hari ini</p>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div id="kpiOnProgressBar" class="bg-amber-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Card 4: Task on Pending -->
+            <div class="bg-white rounded-xl p-3.5 sm:p-4 border border-rose-200/80 shadow-2xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-rose-700">Task on Pending</span>
+                <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-xs">⏸</span>
+              </div>
+              <div class="my-2">
+                <div class="flex flex-wrap items-baseline gap-1.5">
+                  <span id="kpiPendingCount" class="text-2xl sm:text-3xl font-bold text-slate-900">0</span>
+                  <span id="kpiOnPendingPercent" class="text-xs font-semibold text-rose-600">(0%)</span>
+                </div>
+                <p id="kpiPendingBreakdown" class="text-[11px] text-slate-500 mt-1">0 tertinggal dari hari lalu</p>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-indigo-600 font-semibold pt-1">
+                <button type="button" id="btnJumpToUpdate" class="hover:underline text-left">Update status & bukti sekarang →</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-3.5 sm:p-5 shadow-2xs">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div>
+                <h2 class="text-xs sm:text-sm font-bold text-slate-900">Grafik Capaian KPI & Penyelesaian Kerjaan</h2>
+                <p class="text-[11px] text-slate-500">Performa sesuai filter kalender & akun</p>
+              </div>
+              <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600">Target ≥ 85%</span>
+            </div>
+            <div class="relative h-56 sm:h-64">
+              <canvas id="teamBarChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-5 shadow-2xs flex flex-col justify-between">
+            <div>
+              <h2 class="text-xs sm:text-sm font-bold text-slate-900">Proporsi Status & Kunci Kerjaan</h2>
+              <p class="text-[11px] text-slate-500 mb-2">Distribusi penyelesaian & validitas bukti</p>
+            </div>
+            <div class="relative h-48 sm:h-52">
+              <canvas id="statusDoughnutChart"></canvas>
+            </div>
+            <div id="statusLegendCustom" class="grid grid-cols-2 gap-1.5 pt-2.5 border-t border-slate-100 text-[11px] text-slate-600"></div>
+          </div>
+        </div>
+
+        <!-- Scorecard Section: Mobile Cards on Handphone + Table on Desktop -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="px-3.5 sm:px-5 py-3.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="text-xs sm:text-sm font-bold text-slate-900">Rekap Skor KPI — PT Niagakara Mitra Juara</h2>
+              <p class="text-[11px] text-slate-500">Ringkasan rencana kerjaan, status dikunci, kelengkapan bukti, dan skor KPI</p>
+            </div>
+            <button type="button" id="btnGoToSpreadsheet" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+              Buka Tabel Update Kerjaan →
+            </button>
+          </div>
+
+          <!-- Tampilan Kartu Lebar Khusus Handphone (md:hidden) -->
+          <div id="teamScorecardMobileCards" class="md:hidden divide-y divide-slate-100 p-3 space-y-2.5"></div>
+
+          <!-- Tampilan Tabel untuk Layar Lebar / Desktop (hidden md:block) -->
+          <div class="hidden md:block overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                  <th class="py-3 px-4">Nama & Email Google</th>
+                  <th class="py-3 px-4">Departemen</th>
+                  <th class="py-3 px-4 text-center">Total Tugas</th>
+                  <th class="py-3 px-4 text-center">Beres & Sah</th>
+                  <th class="py-3 px-4 text-center">Kurang Bukti</th>
+                  <th class="py-3 px-4 text-center">Belum Beres</th>
+                  <th class="py-3 px-4">Progress & Skor KPI</th>
+                  <th class="py-3 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="teamScorecardBody" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: INPUT LIST KERJAAN (PLAN PAGI) — NYAMAN & LEGA DI HP -->
+      <section id="view-plan" class="hidden space-y-4 sm:space-y-5">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+          <!-- Form Input Rencana (Lebar penuh di HP dengan kontrol besar mudah disentuh) -->
+          <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-2xs h-fit">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Step 1: Input Kerjaan</span>
+                <h2 class="text-sm sm:text-base font-bold text-slate-900 mt-1">Input Rencana Kerjaan Harian</h2>
+              </div>
+              <button type="button" id="btnLoadSopInPlan" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1.5 rounded-lg transition shrink-0">
+                ⚡ Muat Semua SOP
+              </button>
+            </div>
+
+            <form id="formAddPlan" class="space-y-3.5">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label for="inputMember" class="block text-xs font-semibold text-slate-700">Akun / Nama Anggota Tim</label>
+                  <span id="planLockHint" class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">🔒 Terkunci</span>
+                </div>
+                <select id="inputMember" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-600"></select>
+              </div>
+
+              <div>
+                <label for="planDefaultSelect" class="block text-xs font-semibold text-slate-700 mb-1">Pilih Kerjaan Default Departemen (SOP)</label>
+                <select id="planDefaultSelect" class="w-full rounded-xl border border-indigo-300 bg-indigo-50/40 px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+              </div>
+
+              <div>
+                <label for="inputTaskTitle" class="block text-xs font-semibold text-slate-700 mb-1">Nama / List Kerjaan <span class="text-rose-500">*</span></label>
+                <textarea id="inputTaskTitle" rows="2" required placeholder="Ketik kerjaan atau pilih dari daftar SOP default di atas..." class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="inputPlanDate" class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Kerjaan</label>
+                  <input type="date" id="inputPlanDate" value="2026-11-04" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <p id="planDatePreview" class="text-[11px] text-indigo-600 font-medium mt-1">Hari: Rabu, 04 Nov 2026</p>
+                </div>
+                <div>
+                  <label for="inputProofType" class="block text-xs font-semibold text-slate-700 mb-1">Syarat Bukti</label>
+                  <select id="inputProofType" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="none">✓ Tanpa Bukti</option>
+                    <option value="screenshot">📷 Screenshot (1 Foto)</option>
+                    <option value="link">🔗 Link URL</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="inputCategory" class="block text-xs font-semibold text-slate-700 mb-1">Departemen</label>
+                  <select id="inputCategory" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="CRM">CRM</option>
+                    <option value="Customer Service">Customer Service</option>
+                    <option value="Advertiser Shopee">Advertiser Shopee</option>
+                    <option value="Advertiser Tiktokshop">Advertiser Tiktokshop</option>
+                    <option value="Advertiser Meta">Advertiser Meta</option>
+                    <option value="Finance">Finance</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="inputPriority" class="block text-xs font-semibold text-slate-700 mb-1">Prioritas (Bobot KPI)</label>
+                  <select id="inputPriority" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="High">High (3 Poin)</option>
+                    <option value="Medium" selected>Medium (2 Poin)</option>
+                    <option value="Low">Low (1 Poin)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label for="inputTargetOutput" class="block text-xs font-semibold text-slate-700 mb-1">Panduan Keterangan / Catatan</label>
+                <input type="text" id="inputTargetOutput" placeholder="Contoh: Isi berapa kontak yang diblasting" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+
+              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-3 rounded-xl shadow-sm transition">
+                + Masukkan ke Daftar Kerjaan Hari Ini
+              </button>
+            </form>
+          </div>
+
+          <div class="lg:col-span-7 space-y-4">
+            <!-- Collapsible SOP Reference Box agar tidak makan tempat di HP -->
+            <div class="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-4 shadow-2xs">
+              <button type="button" id="btnToggleSopAccordion" class="w-full flex items-center justify-between text-left">
+                <div>
+                  <h3 id="planSopTitle" class="text-xs sm:text-sm font-bold text-slate-900">Daftar SOP Harian Departemen</h3>
+                  <p class="text-[11px] text-slate-500">Klik untuk lihat/sembunyikan daftar SOP wajib beserta syarat buktinya</p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span id="planSopBadge" class="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">SOP Wajib</span>
+                  <span id="sopAccordionArrow" class="text-xs font-bold text-slate-500">▾</span>
+                </div>
+              </button>
+              <div id="planSopReferenceList" class="hidden mt-3 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto custom-scrollbar pr-1"></div>
+            </div>
+
+            <!-- Daftar Rencana Kerjaan yang Sudah Di-input -->
+            <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-100">
+                  <div>
+                    <h3 class="text-xs sm:text-sm font-bold text-slate-900">Daftar Rencana Kerjaan (Hari & Jam Input Terbaca)</h3>
+                    <p class="text-[11px] text-slate-500">Menampilkan hari, tanggal kerjaan, waktu input, dan syarat buktinya</p>
+                  </div>
+                  <span id="planTotalCounter" class="text-xs font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full">0 Tugas</span>
+                </div>
+
+                <div id="planListContainer" class="space-y-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1"></div>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span>Sudah selesai menyusun kerjaan?</span>
+                <button type="button" id="btnNextToUpdate" class="font-semibold text-indigo-600 hover:text-indigo-800">
+                  Lanjut ke Step 3: Update Status & Bukti →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: UPDATE STATUS, BUKTI & KETERANGAN (OPTIMAL UNTUK HP & DESKTOP) -->
+      <section id="view-update" class="hidden space-y-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-5 shadow-2xs">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3.5 border-b border-slate-200">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">Step 2: Eksekusi & Kunci</span>
+                <h2 class="text-sm sm:text-base font-bold text-slate-900">Update Status, Bukti (Link / 1 Foto SS) & Kunci Ceklis</h2>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Isi bukti & keterangan, lalu klik <strong>☑️ Ceklis & Kunci</strong> jika sudah beres. Di HP otomatis tampil dalam bentuk <strong>Kartu Lebar</strong> agar leluasa diinput.
+              </p>
+            </div>
+
+            <!-- Controls: Scope + Search + Status Filter + Layout Mode Switcher -->
+            <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
+              <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 self-start">
+                <button type="button" id="btnScopeMine" class="px-2.5 py-1 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-2xs transition">
+                  Hanya Kerjaan Saya
+                </button>
+                <button type="button" id="btnScopeAll" class="px-2.5 py-1 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 transition">
+                  Lihat Semua Tim (View-Only)
+                </button>
+              </div>
+
+              <div class="flex flex-1 sm:flex-initial items-center gap-2">
+                <input type="text" id="searchTaskInput" placeholder="Cari kerjaan / hari / ket..." class="flex-1 sm:w-44 rounded-lg border border-slate-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <select id="filterStatusSelect" class="rounded-lg border border-slate-300 px-2.5 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="ALL">Semua Status</option>
+                  <option value="OVERDUE_OR_UNFINISHED">⚠️ Tertinggal / Belum Beres</option>
+                  <option value="Done">✓ Done (Selesai)</option>
+                  <option value="LOCKED">🔒 Sudah Dikunci</option>
+                  <option value="UNVERIFIED">! Kurang Bukti Wajib</option>
+                  <option value="In Progress">⏳ In Progress</option>
+                  <option value="Pending">⏸ Pending / Belum Beres</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAMPILAN KARTU LEBAR KHUSUS HANDPHONE / LAYAR SEMPIT (lg:hidden) — TIDAK SEMPIT & MUDAH INPUT -->
+          <div id="mobileUpdateCardsContainer" class="lg:hidden mt-3.5 space-y-3"></div>
+
+          <!-- TAMPILAN TABEL SPREADSHEET UNTUK DESKTOP LEBAR (hidden lg:block) -->
+          <div class="hidden lg:block overflow-x-auto custom-scrollbar mt-4">
+            <table class="w-full text-left border-collapse min-w-[980px]">
+              <thead>
+                <tr class="bg-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-600 border-y border-slate-200">
+                  <th class="py-2.5 px-2.5 w-8 text-center">#</th>
+                  <th class="py-2.5 px-3 w-40">Anggota & Dept</th>
+                  <th class="py-2.5 px-3 w-40">Hari, Tgl & Jam Input</th>
+                  <th class="py-2.5 px-3 min-w-[210px]">List Kerjaan Harian</th>
+                  <th class="py-2.5 px-3 w-40 min-w-[145px]">Status Beres?</th>
+                  <th class="py-2.5 px-3 w-64 min-w-[250px]">Bukti (Link / Screenshot 1 Foto)</th>
+                  <th class="py-2.5 px-3 min-w-[220px]">Keterangan / Catatan</th>
+                  <th class="py-2.5 px-3 w-36 text-center">Ceklis Kunci & Edit</th>
+                  <th class="py-2.5 px-2.5 w-16 text-center">Hapus</th>
+                </tr>
+              </thead>
+              <tbody id="spreadsheetTableBody" class="divide-y divide-slate-200 text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4 (KHUSUS ADMIN): USER (KELOLA USER, EDIT, HAPUS & TAMBAH USER BARU) -->
+      <section id="view-users" class="hidden space-y-4 sm:space-y-5">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+          <!-- Form Tambah / Edit User -->
+          <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-2xs h-fit">
+            <div class="mb-3.5">
+              <span id="userFormBadge" class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Manajemen Akun Google</span>
+              <h2 id="userFormTitle" class="text-base font-bold text-slate-900 mt-1">Tambah User Baru</h2>
+              <p class="text-xs text-slate-500">Hanya email Google yang terdaftar di daftar ini yang diizinkan login ke dashboard PT Niagakara Mitra Juara.</p>
+            </div>
+
+            <form id="formManageUser" class="space-y-3.5">
+              <input type="hidden" id="editUserId" value="" />
+              <div>
+                <label for="userNameInput" class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap User <span class="text-rose-500">*</span></label>
+                <input type="text" id="userNameInput" required placeholder="Contoh: Muhammad Multazim Al-Haq" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+
+              <div>
+                <label for="userEmailInput" class="block text-xs font-semibold text-slate-700 mb-1">Email Akun Google <span class="text-rose-500">*</span></label>
+                <input type="email" id="userEmailInput" required placeholder="Contoh: nama.staff@gmail.com" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <label for="userDivisionInput" class="block text-xs font-semibold text-slate-700">Departemen / Jabatan <span class="text-rose-500">*</span></label>
+                  <button type="button" id="btnToggleAddDept" class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md transition">
+                    + Tambah Departemen/Jabatan
+                  </button>
+                </div>
+                <select id="userDivisionInput" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="Advertiser Meta">Advertiser Meta</option>
+                  <option value="Advertiser Shopee">Advertiser Shopee</option>
+                  <option value="Advertiser Tiktokshop">Advertiser Tiktokshop</option>
+                  <option value="Customer Service">Customer Service</option>
+                  <option value="CRM">CRM</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Admin">Admin</option>
+                  <option value="__ADD_NEW__">+ Tambah Departemen/Jabatan Baru...</option>
+                </select>
+
+                <!-- Inline Box Tambah Departemen/Jabatan Baru -->
+                <div id="newDeptBox" class="hidden p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200 space-y-2">
+                  <label for="newDeptNameInput" class="block text-[11px] font-semibold text-indigo-900">Nama Departemen / Jabatan Baru:</label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="text" id="newDeptNameInput" placeholder="Contoh: Content Creator / HRD / Gudang" class="flex-1 min-w-0 rounded-lg border border-indigo-300 bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <button type="button" id="btnSaveNewDept" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shrink-0 transition">
+                      Simpan
+                    </button>
+                    <button type="button" id="btnCancelNewDept" class="px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 text-xs font-medium shrink-0">
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label for="userRoleInput" class="block text-xs font-semibold text-slate-700 mb-1">Level Hak Akses Sistem</label>
+                <select id="userRoleInput" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="MEMBER">Staff / Member (Isolasi 1 Akun Pribadi)</option>
+                  <option value="ADMIN">Admin (Akses Master Semua Data & Kelola User)</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-2 pt-1">
+                <button type="submit" id="btnSubmitUserForm" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-2.5 rounded-xl shadow-sm transition">
+                  + Tambah User
+                </button>
+                <button type="button" id="btnCancelEditUser" class="hidden px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-600 transition">
+                  Batal Edit
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Daftar User Terdaftar (Kartu Responsif di HP + Tabel di Desktop) -->
+          <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 mb-3.5 border-b border-slate-200">
+                <div>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900">Daftar User Terdaftar — PT Niagakara Mitra Juara</h3>
+                  <p class="text-xs text-slate-500">Klik <strong>Edit</strong> untuk mengubah nama/email/departemen, atau <strong>Hapus</strong> untuk mencabut akses login.</p>
+                </div>
+                <input type="text" id="searchUserTableInput" placeholder="Cari nama / email / dept..." class="w-full sm:w-52 rounded-lg border border-slate-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+
+              <!-- Tampilan Kartu User Khusus HP (md:hidden) -->
+              <div id="adminUsersMobileCards" class="md:hidden space-y-2.5"></div>
+
+              <!-- Tampilan Tabel User untuk Desktop (hidden md:block) -->
+              <div class="hidden md:block overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-600 border-y border-slate-200">
+                      <th class="py-2.5 px-3 w-10 text-center">No</th>
+                      <th class="py-2.5 px-3">Nama User</th>
+                      <th class="py-2.5 px-3">Email Google (Akses Login)</th>
+                      <th class="py-2.5 px-3">Departemen</th>
+                      <th class="py-2.5 px-3 text-center">Role</th>
+                      <th class="py-2.5 px-3 text-right">Aksi (Edit / Hapus)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminUsersTableBody" class="divide-y divide-slate-200 text-xs"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div><!-- End of #appShell -->
+
+  <!-- Google Sheets Cloud Sync & Multi-Device Setup Modal -->
+  <div id="cloudSyncModal" class="fixed inset-0 z-50 hidden bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Database Terpusat</span>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">Sinkronisasi Google Sheets (Lintas Device & User)</h3>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Terhubung ke file Google Sheets: <strong>Database KPI Daily Work - PT Niagakara Mitra Juara</strong></p>
+        </div>
+        <button type="button" id="btnCloseCloudModal" class="text-slate-400 hover:text-slate-700 font-bold text-sm px-2 py-1">✕</button>
+      </div>
+
+      <div class="p-4 sm:p-5 overflow-y-auto custom-scrollbar space-y-4 text-xs">
+        <!-- Box 1: Direct Link to Created Google Sheet -->
+        <div class="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="space-y-0.5">
+            <div class="font-bold text-emerald-950">1. File Database Google Sheets Sudah Dibuat di Google Drive Anda</div>
+            <div class="text-[11px] text-emerald-800">ID Spreadsheet: <code class="bg-white/80 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">1kHpe8Dlbm5GfnF8RB25Z4TjkyPJqzB4KtuVVY6HAm0k</code></div>
+          </div>
+          <a href="https://docs.google.com/spreadsheets/d/1kHpe8Dlbm5GfnF8RB25Z4TjkyPJqzB4KtuVVY6HAm0k/edit" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shrink-0 shadow-2xs transition">
+            <span>📊 Buka Google Sheets Database ↗</span>
+          </a>
+        </div>
+
+        <!-- Box 2: Web App Endpoint Input with Permanent Site-Level Lock -->
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <label for="cloudWebAppUrlInput" class="font-bold text-slate-900">2. Koneksi Endpoint Cloud Google Sheets (Terkunci dari Sisi Site)</label>
+            <span id="cloudSyncStatusBadge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">🔒 Koneksi Cloud Terkunci Permanen</span>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <input type="url" id="cloudWebAppUrlInput" value="https://script.google.com/macros/s/AKfycbx7HVfA4na1Lg2oRduA4YvoB_GIxJIMGrAnYiSw2gyJDUNaovv2aOaJF06YHYRw4gmD/exec" placeholder="https://script.google.com/macros/s/AKfycbx7HVfA4na1Lg2oRduA4YvoB_GIxJIMGrAnYiSw2gyJDUNaovv2aOaJF06YHYRw4gmD/exec" class="flex-1 min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed" />
+            <button type="button" id="btnSaveCloudUrl" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shrink-0 transition">
+              Simpan & Sinkronkan
+            </button>
+            <button type="button" id="btnUnlockCloudUrl" class="hidden px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-xs shrink-0 transition">
+              🔓 Buka Kunci URL
+            </button>
+            <button type="button" id="btnPullFromCloud" class="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-semibold text-xs shrink-0 transition">
+              🔄 Tarik Data Cloud
+            </button>
+          </div>
+          <p id="cloudLockHelpText" class="text-[11px] text-emerald-800 bg-emerald-50/80 border border-emerald-200 rounded-lg p-2 leading-relaxed">
+            <strong>✓ Status Terkunci Permanen:</strong> Koneksi ke Google Sheets <code>1kHpe8Dlbm5GfnF8RB25Z4TjkyPJqzB4KtuVVY6HAm0k</code> sudah dikunci dari sisi site. Ketika halaman di-refresh atau dibuka dengan akun lain, koneksi tetap terpasang otomatis tanpa perlu pasang ulang.
+          </p>
+        </div>
+
+        <!-- Box 3: Ready-to-Paste Google Apps Script (Code.gs) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-bold text-slate-900">3. Script Penghubung Otomatis (Code.gs) — Cukup Copy & Deploy 1x di Google Sheets</span>
+              <p class="text-[11px] text-slate-500">Buka Google Sheets di atas → klik menu <strong>Extensions &gt; Apps Script</strong> → Paste kode ini → klik <strong>Deploy &gt; New deployment (Web app, Access: Anyone)</strong>.</p>
+            </div>
+            <button type="button" id="btnCopyAppsScript" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] shrink-0 transition">
+              📋 Copy Kode Code.gs
+            </button>
+          </div>
+          <textarea id="appsScriptCodeArea" readonly rows="7" class="w-full rounded-xl border border-slate-300 bg-slate-900 text-emerald-300 font-mono text-[11px] p-3 focus:outline-none"></textarea>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
+        <span class="text-slate-500">Data otomatis disinkronkan ke ID: 1kHpe8Dlbm5GfnF8RB25Z4TjkyPJqzB4KtuVVY6HAm0k</span>
+        <button type="button" id="btnCloseCloudModalBottom" class="font-semibold text-slate-700 bg-white border border-slate-300 px-3.5 py-1.5 rounded-lg">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screenshot Image Preview Modal -->
+  <div id="screenshotPreviewModal" class="fixed inset-0 z-50 hidden bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+        <div class="min-w-0 pr-2">
+          <h3 id="previewModalTitle" class="text-xs sm:text-sm font-bold text-slate-900 truncate">Bukti Screenshot Kerjaan</h3>
+          <p id="previewModalSub" class="text-[11px] text-slate-500 truncate">Lampiran 1 Foto Bukti</p>
+        </div>
+        <button type="button" id="btnCloseScreenshotModal" class="text-slate-400 hover:text-slate-700 font-bold text-sm px-2 py-1 shrink-0">✕</button>
+      </div>
+      <div class="p-3 bg-slate-900 flex items-center justify-center max-h-[380px] overflow-auto">
+        <img id="previewModalImg" src="" alt="Bukti Screenshot" class="max-w-full h-auto rounded-lg border border-slate-700" />
+      </div>
+      <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
+        <span id="previewModalNotes" class="text-slate-600 font-medium truncate"></span>
+        <button type="button" id="btnCloseScreenshotModalBottom" class="font-semibold text-slate-700 bg-white border border-slate-300 px-3 py-1.5 rounded-lg shrink-0">Tutup Preview</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Screenshot Upload -->
+  <input type="file" id="hiddenScreenshotInput" accept="image/*" class="hidden" />
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 left-4 sm:left-auto z-50 hidden">
+    <div class="bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 border border-slate-700">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+      <span id="toastMessage">Perubahan disimpan otomatis</span>
+    </div>
+  </div>
+
+  <script>
+    const RUNNING_TODAY = '2026-11-04';
+
+    function createDemoScreenshotSvg(title, user, timeStr) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="380" viewBox="0 0 640 380">
+        <rect width="640" height="380" fill="#0f172a" rx="16"/>
+        <rect x="20" y="20" width="600" height="44" fill="#1e293b" rx="8"/>
+        <circle cx="42" cy="42" r="7" fill="#ef4444"/>
+        <circle cx="62" cy="42" r="7" fill="#f59e0b"/>
+        <circle cx="82" cy="42" r="7" fill="#10b981"/>
+        <text x="110" y="47" fill="#94a3b8" font-family="sans-serif" font-size="13" font-weight="bold">BUKTI SCREENSHOT — PT NIAGAKARA MITRA JUARA</text>
+        <rect x="20" y="80" width="600" height="276" fill="#1e293b" rx="10" stroke="#334155"/>
+        <text x="45" y="125" fill="#38bdf8" font-family="sans-serif" font-size="14" font-weight="bold">Pegawai: ${user}</text>
+        <text x="45" y="155" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">${title.slice(0, 58)}</text>
+        <rect x="45" y="180" width="550" height="95" fill="#0f172a" rx="8" stroke="#475569"/>
+        <text x="65" y="212" fill="#10b981" font-family="sans-serif" font-size="14" font-weight="bold">✓ STATUS TERVERIFIKASI (1 FOTO SCREENSHOT)</text>
+        <text x="65" y="240" fill="#cbd5e1" font-family="sans-serif" font-size="12">Timestamp Bukti: ${timeStr} • PT Niagakara Mitra Juara</text>
+        <text x="65" y="260" fill="#94a3b8" font-family="sans-serif" font-size="11">Tangkap layar aktivitas harian tersimpan di dalam baris kerjaan.</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    const DEFAULT_MEMBERS = [
+      { id: 'u1', name: 'Niagakara', division: 'Admin', role: 'ADMIN', email: 'ptniagakara@gmail.com' },
+      { id: 'u2', name: 'Iqbal Surya', division: 'Admin', role: 'ADMIN', email: 'suryadi.iqbal@gmail.com' },
+      { id: 'u3', name: 'Muhammad Multazim Al-Haq', division: 'Advertiser Meta', role: 'MEMBER', email: 'multazim.alhaq98@gmail.com' },
+      { id: 'u4', name: 'Ihwan Dwi Cahyo', division: 'Advertiser Shopee', role: 'MEMBER', email: 'Ihwandwicahyo@gmail.com' },
+      { id: 'u5', name: 'Fahmi Farraj', division: 'Advertiser Tiktokshop', role: 'MEMBER', email: 'jarsibutar@gmail.com' },
+      { id: 'u6', name: 'Fahmi Ihsan', division: 'Advertiser Meta', role: 'MEMBER', email: 'ihsanfahmi13@gmail.com' },
+      { id: 'u7', name: 'Pipih Nur Hopipah', division: 'Customer Service', role: 'MEMBER', email: 'nutriflassereal@gmail.com' },
+      { id: 'u8', name: 'Vega Kharisma Nurulita', division: 'Finance', role: 'MEMBER', email: 'vegakan9@gmail.com' },
+      { id: 'u9', name: 'Indri Julianti Lestari', division: 'Customer Service', role: 'MEMBER', email: 'csalyaniagakara@gmail.com' },
+      { id: 'u10', name: 'Delia Anggraeni Rahmat', division: 'Customer Service', role: 'MEMBER', email: 'csdelaniagakara@gmail.com' },
+      { id: 'u11', name: 'Yayat Nurhayati', division: 'CRM', role: 'MEMBER', email: 'ekacrm@gmail.com' },
+      { id: 'u12', name: 'Qurotul Aini Annisa', division: 'CRM', role: 'MEMBER', email: 'csainunn2@gmail.com' }
+    ];
+
+    const DEPARTMENT_DEFAULT_JOBS = {
+      'CRM': [
+        { title: 'Menyimpan data customer ke folder CRM dan kontak Gmail serta memisahkan database sesuai kebutuhan.', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan singkat)', priority: 'Medium' },
+        { title: 'Blasting SOP H+1–H+60, SOP tertunda, resi H+1, Harbolnas, Payday, dan cross-selling.', proofType: 'screenshot', noteHint: 'Wajib isi berapa kontak yang diblasting + 1 foto SS', priority: 'High' },
+        { title: 'Follow up customer melalui chat.', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan singkat)', priority: 'Medium' },
+        { title: 'Follow up customer melalui telepon, khususnya customer yang belum fix order.', proofType: 'screenshot', noteHint: 'Wajib SS bagian call history (1 foto) + keterangan', priority: 'High' },
+        { title: 'Membuat status WhatsApp.', proofType: 'screenshot', noteHint: 'Wajib bukti screenshot (1 foto) + keterangan', priority: 'Low' },
+        { title: 'Melakukan input pesanan customer ke Webot dan memastikan data pesanan lengkap.', proofType: 'none', noteHint: 'Tanpa bukti, isi keterangan jika ada kendala', priority: 'High' },
+        { title: 'Melakukan tracking resi, memonitor status pengiriman, dan menindaklanjuti paket bermasalah.', proofType: 'screenshot', noteHint: 'Wajib bukti screenshot (1 foto) + keterangan tindak lanjut', priority: 'High' }
+      ],
+      'Customer Service': [
+        { title: 'Lead Handling, Merespon lead yang baru masuk', proofType: 'none', noteHint: 'Wajib isi keterangan berapa lead hariannya (tanpa bukti)', priority: 'High' },
+        { title: 'Follow up customer melalui chat.', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan singkat)', priority: 'Medium' },
+        { title: 'Follow up customer melalui telepon, khususnya customer yang belum fix order.', proofType: 'screenshot', noteHint: 'Wajib bukti screenshot (1 foto) + keterangan', priority: 'High' },
+        { title: 'Membuat Status Whatsapp', proofType: 'screenshot', noteHint: 'Wajib bukti screenshot (1 foto)', priority: 'Low' },
+        { title: 'Melakukan input pesanan customer ke Webot dan memastikan data pesanan lengkap.', proofType: 'none', noteHint: 'Tanpa perlu bukti, isi keterangan jika ada kendala', priority: 'High' },
+        { title: 'Melakukan tracking resi, memonitor status pengiriman, dan menindaklanjuti paket bermasalah.', proofType: 'screenshot', noteHint: 'Wajib bukti screenshot (1 foto) + keterangan', priority: 'High' },
+        { title: 'Labeling Customer baik dengan label maupun order created.', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan singkat)', priority: 'Medium' },
+        { title: 'Input laporan harian', proofType: 'none', noteHint: 'Tanpa perlu bukti, isi keterangan jika ada kendala', priority: 'Medium' }
+      ],
+      'Advertiser Shopee': [
+        { title: 'Monitoring dan evaluasi performa Shopee', proofType: 'none', noteHint: 'Tanpa perlu bukti, wajib isi keterangan evaluasi', priority: 'High' },
+        { title: 'Optimasi anggaran berdasarkan performa', proofType: 'none', noteHint: 'Tanpa bukti, isi keterangan dari budget berapa jadi berapa / bagaimana', priority: 'High' },
+        { title: 'Input laporan budget harian', proofType: 'none', noteHint: 'Tanpa perlu bukti, wajib isi keterangan laporan budget', priority: 'Medium' },
+        { title: 'Pembaruan creative', proofType: 'link', noteHint: 'Wajib bukti dengan Link URL dan keterangan', priority: 'High' },
+        { title: 'Pencarian Affiliate potensial', proofType: 'screenshot', noteHint: 'Wajib bukti screenshot (1 foto) plus keterangan', priority: 'Medium' },
+        { title: 'Monitoring chat pada toko shopee', proofType: 'none', noteHint: 'Isi keterangan jika ada kendala', priority: 'Low' }
+      ],
+      'Advertiser Tiktokshop': [
+        { title: 'Monitoring dan evaluasi performa tiktokshop', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan evaluasi)', priority: 'High' },
+        { title: 'Optimasi anggaran berdasarkan performa', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan optimasi anggaran)', priority: 'High' },
+        { title: 'Input laporan budget harian', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan budget harian)', priority: 'Medium' },
+        { title: 'Membuat creative baru', proofType: 'link', noteHint: 'Wajib bukti dengan Link URL dan keterangan', priority: 'High' },
+        { title: 'Evaluasi performa creative', proofType: 'screenshot', noteHint: 'Wajib bukti dengan screenshot (1 foto) dan keterangan', priority: 'Medium' },
+        { title: 'Pencarian affiliate potensial', proofType: 'screenshot', noteHint: 'Wajib bukti dengan screenshot (1 foto) dan keterangan', priority: 'Medium' },
+        { title: 'Monitoring chat pada toko', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan jika ada kendala)', priority: 'Low' }
+      ],
+      'Advertiser Meta': [
+        { title: 'Monitoring dan evaluasi performa ads', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan evaluasi ads)', priority: 'High' },
+        { title: 'Optimasi anggaran berdasarkan performa', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan optimasi budget)', priority: 'High' },
+        { title: 'Input laporan budget harian', proofType: 'none', noteHint: 'Tanpa bukti (isi keterangan laporan budget)', priority: 'Medium' },
+        { title: 'Membuat creative baru', proofType: 'link', noteHint: 'Wajib bukti dengan Link URL + keterangan', priority: 'High' },
+        { title: 'Optimasi landing page', proofType: 'screenshot', noteHint: 'Wajib bukti dengan screenshot (1 foto) + keterangan', priority: 'High' },
+        { title: 'Testing creative baru', proofType: 'screenshot', noteHint: 'Wajib bukti dengan screenshot (1 foto) + keterangan', priority: 'Medium' },
+        { title: 'Koordinasi dengan CS', proofType: 'none', noteHint: 'Tanpa keterangan wajib (opsional)', priority: 'Low' }
+      ],
+      'Finance': [
+        { title: 'Rekonsiliasi mutasi bank & verifikasi pembayaran masuk harian', proofType: 'link', noteHint: 'Lampirkan link sheet rekonsiliasi & keterangan', priority: 'High' },
+        { title: 'Verifikasi budget iklan harian Advertiser (Meta, Shopee, TikTok)', proofType: 'none', noteHint: 'Tanpa bukti, isi keterangan total topup budget', priority: 'High' },
+        { title: 'Input laporan kas & pengeluaran operasional harian', proofType: 'screenshot', noteHint: 'Lampirkan 1 foto SS rekap kas & keterangan', priority: 'Medium' }
+      ]
+    };
+
+    function buildInitialTasks() {
+      const demoSS = (title, name) => createDemoScreenshotSvg(title, name, '04 Nov 2026 09:40 WIB');
+      return [
+        {
+          id: 'nk_1', date: '2026-11-04', inputTime: '08:12 WIB', memberId: 'u3', category: 'Advertiser Meta',
+          title: 'Monitoring dan evaluasi performa ads', priority: 'High', proofType: 'none',
+          targetOutput: 'Tanpa bukti (isi keterangan evaluasi ads)', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: '', notes: 'CPR kampanye utama stabil di Rp 18.500, ROAS 4.2x'
+        },
+        {
+          id: 'nk_2', date: '2026-11-04', inputTime: '08:15 WIB', memberId: 'u3', category: 'Advertiser Meta',
+          title: 'Membuat creative baru', priority: 'High', proofType: 'link',
+          targetOutput: 'Wajib bukti dengan Link URL + keterangan', status: 'Done', isLocked: true,
+          proofLink: 'https://drive.google.com/drive/folders/creative-meta-04nov', proofImage: '', notes: '3 video hook baru untuk produk Nutriflas sudah di-upload'
+        },
+        {
+          id: 'nk_3', date: '2026-11-04', inputTime: '08:20 WIB', memberId: 'u3', category: 'Advertiser Meta',
+          title: 'Optimasi landing page', priority: 'High', proofType: 'screenshot',
+          targetOutput: 'Wajib bukti dengan screenshot (1 foto) + keterangan', status: 'In Progress', isLocked: false,
+          proofLink: '', proofImage: '', notes: 'Sedang kompres gambar hero agar speed naik ke 92%'
+        },
+        {
+          id: 'nk_4', date: '2026-11-03', inputTime: '08:30 WIB', memberId: 'u3', category: 'Advertiser Meta',
+          title: 'Testing creative baru', priority: 'Medium', proofType: 'screenshot',
+          targetOutput: 'Wajib bukti dengan screenshot (1 foto)', status: 'Pending', isLocked: false,
+          proofLink: '', proofImage: '', notes: 'Tertinggal kemarin sore karena menunggu aset foto studio'
+        },
+        {
+          id: 'nk_5', date: '2026-11-04', inputTime: '08:05 WIB', memberId: 'u4', category: 'Advertiser Shopee',
+          title: 'Optimasi anggaran berdasarkan performa', priority: 'High', proofType: 'none',
+          targetOutput: 'Isi dari budget berapa jadi berapa', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: '', notes: 'Naikkan budget iklan pencarian dari Rp 750.000 jadi Rp 1.200.000 karena ROAS 7.8x'
+        },
+        {
+          id: 'nk_6', date: '2026-11-04', inputTime: '08:10 WIB', memberId: 'u4', category: 'Advertiser Shopee',
+          title: 'Pembaruan creative', priority: 'High', proofType: 'link',
+          targetOutput: 'Wajib bukti dengan Link URL dan keterangan', status: 'Done', isLocked: true,
+          proofLink: 'https://docs.google.com/spreadsheets/d/creative-shopee-ihwan', proofImage: '', notes: 'Update 4 banner flash sale toko Shopee'
+        },
+        {
+          id: 'nk_7', date: '2026-11-04', inputTime: '08:18 WIB', memberId: 'u4', category: 'Advertiser Shopee',
+          title: 'Pencarian Affiliate potensial', priority: 'Medium', proofType: 'screenshot',
+          targetOutput: 'Wajib bukti screenshot (1 foto) plus keterangan', status: 'Done', isLocked: false,
+          proofLink: '', proofImage: demoSS('Pencarian Affiliate Shopee (25 Kreator)', 'Ihwan Dwi Cahyo'), notes: 'Sudah invite 25 affiliate kreator niche kesehatan'
+        },
+        {
+          id: 'nk_8', date: '2026-11-04', inputTime: '08:22 WIB', memberId: 'u5', category: 'Advertiser Tiktokshop',
+          title: 'Membuat creative baru', priority: 'High', proofType: 'link',
+          targetOutput: 'Wajib bukti dengan Link URL dan keterangan', status: 'Done', isLocked: true,
+          proofLink: 'https://drive.google.com/drive/folders/tiktok-video-fahmi', proofImage: '', notes: '4 konten VT soft-selling siap tayang hari ini'
+        },
+        {
+          id: 'nk_9', date: '2026-11-04', inputTime: '08:25 WIB', memberId: 'u5', category: 'Advertiser Tiktokshop',
+          title: 'Evaluasi performa creative', priority: 'Medium', proofType: 'screenshot',
+          targetOutput: 'Wajib bukti dengan screenshot (1 foto) dan keterangan', status: 'In Progress', isLocked: false,
+          proofLink: '', proofImage: '', notes: 'Menunggu rekap CTR video jam 12.00 siang'
+        },
+        {
+          id: 'nk_10', date: '2026-11-04', inputTime: '08:14 WIB', memberId: 'u6', category: 'Advertiser Meta',
+          title: 'Monitoring dan evaluasi performa ads', priority: 'High', proofType: 'none',
+          targetOutput: 'Tanpa bukti (isi keterangan evaluasi ads)', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: '', notes: '3 adset winning dipertahankan, 2 adset boncos dimatikan'
+        },
+        {
+          id: 'nk_11', date: '2026-11-04', inputTime: '08:19 WIB', memberId: 'u6', category: 'Advertiser Meta',
+          title: 'Testing creative baru', priority: 'Medium', proofType: 'screenshot',
+          targetOutput: 'Wajib bukti dengan screenshot (1 foto)', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: demoSS('Testing Creative Baru Meta Ads', 'Fahmi Ihsan'), notes: 'Split test 2 angle copywriting baru'
+        },
+        {
+          id: 'nk_12', date: '2026-11-04', inputTime: '08:02 WIB', memberId: 'u7', category: 'Customer Service',
+          title: 'Lead Handling, Merespon lead yang baru masuk', priority: 'High', proofType: 'none',
+          targetOutput: 'Wajib isi keterangan berapa lead hariannya', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: '', notes: 'Total 68 lead harian masuk pagi-siang, sudah direspon 100% (<3 menit)'
+        },
+        {
+          id: 'nk_13', date: '2026-11-04', inputTime: '08:06 WIB', memberId: 'u7', category: 'Customer Service',
+          title: 'Follow up customer melalui telepon, khususnya customer yang belum fix order.', priority: 'High', proofType: 'screenshot',
+          targetOutput: 'Wajib bukti screenshot (1 foto) + keterangan', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: demoSS('Call History Follow Up CS (18 Nomor)', 'Pipih Nur Hopipah'), notes: '18 customer ditelepon, 11 jadi fix order COD/Transfer'
+        },
+        {
+          id: 'nk_14', date: '2026-11-04', inputTime: '08:30 WIB', memberId: 'u8', category: 'Finance',
+          title: 'Rekonsiliasi mutasi bank & verifikasi pembayaran masuk harian', priority: 'High', proofType: 'link',
+          targetOutput: 'Lampirkan link sheet rekonsiliasi & keterangan', status: 'Done', isLocked: true,
+          proofLink: 'https://docs.google.com/spreadsheets/d/rekon-finance-niagakara', proofImage: '', notes: 'Semua mutasi BCA & Mandiri klop dengan Webot'
+        },
+        {
+          id: 'nk_15', date: '2026-11-04', inputTime: '08:08 WIB', memberId: 'u9', category: 'Customer Service',
+          title: 'Lead Handling, Merespon lead yang baru masuk', priority: 'High', proofType: 'none',
+          targetOutput: 'Wajib isi keterangan berapa lead hariannya', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: '', notes: '54 lead baru tertangani, closing rate sementara 42%'
+        },
+        {
+          id: 'nk_16', date: '2026-11-03', inputTime: '09:00 WIB', memberId: 'u9', category: 'Customer Service',
+          title: 'Melakukan tracking resi, memonitor status pengiriman, dan menindaklanjuti paket bermasalah.', priority: 'High', proofType: 'screenshot',
+          targetOutput: 'Wajib bukti screenshot (1 foto) + keterangan', status: 'Pending', isLocked: false,
+          proofLink: '', proofImage: '', notes: 'Masih menunggu konfirmasi ekspedisi untuk 2 resi tertahan di gudang kurir'
+        },
+        {
+          id: 'nk_17', date: '2026-11-04', inputTime: '08:11 WIB', memberId: 'u10', category: 'Customer Service',
+          title: 'Lead Handling, Merespon lead yang baru masuk', priority: 'High', proofType: 'none',
+          targetOutput: 'Wajib isi keterangan berapa lead hariannya', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: '', notes: '61 lead masuk hari ini, sudah di-handle semua'
+        },
+        {
+          id: 'nk_18', date: '2026-11-04', inputTime: '08:04 WIB', memberId: 'u11', category: 'CRM',
+          title: 'Blasting SOP H+1–H+60, SOP tertunda, resi H+1, Harbolnas, Payday, dan cross-selling.', priority: 'High', proofType: 'screenshot',
+          targetOutput: 'Wajib isi berapa kontak yang diblasting + 1 foto SS', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: demoSS('Blasting WhatsApp CRM (420 Kontak)', 'Yayat Nurhayati'), notes: '420 kontak customer H+7 & H+30 berhasil diblasting promo repeat order'
+        },
+        {
+          id: 'nk_19', date: '2026-11-04', inputTime: '08:09 WIB', memberId: 'u11', category: 'CRM',
+          title: 'Menyimpan data customer ke folder CRM dan kontak Gmail serta memisahkan database sesuai kebutuhan.', priority: 'Medium', proofType: 'none',
+          targetOutput: 'Tanpa bukti (isi keterangan singkat)', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: '', notes: '135 kontak baru kemarin sudah masuk label Google Contacts CRM'
+        },
+        {
+          id: 'nk_20', date: '2026-11-04', inputTime: '08:07 WIB', memberId: 'u12', category: 'CRM',
+          title: 'Blasting SOP H+1–H+60, SOP tertunda, resi H+1, Harbolnas, Payday, dan cross-selling.', priority: 'High', proofType: 'screenshot',
+          targetOutput: 'Wajib isi berapa kontak yang diblasting + 1 foto SS', status: 'Done', isLocked: true,
+          proofLink: '', proofImage: demoSS('Blasting SOP CRM (385 Kontak)', 'Qurotul Aini Annisa'), notes: '385 kontak berhasil diblasting, 19 langsung balas repeat order'
+        },
+        {
+          id: 'nk_21', date: '2026-11-04', inputTime: '08:16 WIB', memberId: 'u12', category: 'CRM',
+          title: 'Follow up customer melalui telepon, khususnya customer yang belum fix order.', priority: 'High', proofType: 'screenshot',
+          targetOutput: 'Wajib SS bagian call history (1 foto) + keterangan', status: 'In Progress', isLocked: false,
+          proofLink: '', proofImage: '', notes: 'Baru telepon 9 nomor, target 20 nomor sore ini'
+        }
+      ];
+    }
+
+    const PRIORITY_WEIGHTS = { High: 3, Medium: 2, Low: 1 };
+    const HARI_INDO = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const BULAN_PENDEK = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    const DEFAULT_DEPARTMENTS = [
+      'Advertiser Meta',
+      'Advertiser Shopee',
+      'Advertiser Tiktokshop',
+      'Customer Service',
+      'CRM',
+      'Finance',
+      'Admin'
+    ];
+
+    let state = {
+      isAuthenticated: false,
+      loggedInUserId: 'u1',
+      bannerDismissed: false,
+      filterDrawerOpen: true,
+      sopAccordionOpen: false,
+      departments: JSON.parse(JSON.stringify(DEFAULT_DEPARTMENTS)),
+      members: JSON.parse(JSON.stringify(DEFAULT_MEMBERS)),
+      tasks: buildInitialTasks(),
+      activeTab: 'dashboard',
+      startDate: RUNNING_TODAY,
+      endDate: RUNNING_TODAY,
+      selectedMonth: 'CUSTOM',
+      selectedYear: '2026',
+      selectedUser: 'ALL',
+      spreadsheetScope: 'MINE',
+      searchQuery: '',
+      userSearchQuery: '',
+      statusFilter: 'ALL',
+      pendingUploadTaskId: null
+    };
+
+    try {
+      const saved = localStorage.getItem('niagakara_mitra_juara_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.members && parsed.tasks && parsed.members.length > 0) {
+          state.members = parsed.members;
+          state.tasks = parsed.tasks;
+        }
+        if (parsed.departments && Array.isArray(parsed.departments) && parsed.departments.length > 0) {
+          state.departments = parsed.departments;
+        }
+      }
+    } catch (e) {}
+
+    const SHEET_ID = '1kHpe8Dlbm5GfnF8RB25Z4TjkyPJqzB4KtuVVY6HAm0k';
+    const DEFAULT_LOCKED_SHEET_URL = 'https://script.google.com/macros/s/AKfycbx7HVfA4na1Lg2oRduA4YvoB_GIxJIMGrAnYiSw2gyJDUNaovv2aOaJF06YHYRw4gmD/exec';
+
+    // Multi-layer persistent storage (window.name survives sandboxed iframe refreshes!)
+    function readPersistentStore(key) {
+      try {
+        const v = localStorage.getItem(key);
+        if (v) return v;
+      } catch (e) {}
+      try {
+        const v2 = sessionStorage.getItem(key);
+        if (v2) return v2;
+      } catch (e) {}
+      try {
+        if (window.name && window.name.startsWith('{')) {
+          const wn = JSON.parse(window.name);
+          if (wn && wn[key]) return wn[key];
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function writePersistentStore(key, val) {
+      try { localStorage.setItem(key, val); } catch (e) {}
+      try { sessionStorage.setItem(key, val); } catch (e) {}
+      try {
+        let wn = {};
+        if (window.name && window.name.startsWith('{')) {
+          try { wn = JSON.parse(window.name) || {}; } catch (e2) { wn = {}; }
+        }
+        wn[key] = val;
+        window.name = JSON.stringify(wn);
+      } catch (e) {}
+    }
+
+    // Re-load state from multi-layer persistent store (including window.name so refreshes never lose data!)
+    try {
+      const savedRaw = readPersistentStore('niagakara_mitra_juara_v3');
+      if (savedRaw) {
+        const parsed = JSON.parse(savedRaw);
+        if (parsed.members && parsed.tasks && parsed.members.length > 0) {
+          state.members = parsed.members;
+          state.tasks = parsed.tasks;
+        }
+        if (parsed.departments && Array.isArray(parsed.departments) && parsed.departments.length > 0) {
+          state.departments = parsed.departments;
+        }
+      }
+    } catch (e) {}
+
+    // Permanent Site-Locked Cloud Connection (Hardcoded to Official Niagakara Apps Script Web App)
+    let storedUrl = readPersistentStore('niagakara_cloud_webapp_url');
+    let cloudWebAppUrl = (storedUrl && storedUrl.includes('script.google.com')) ? storedUrl : DEFAULT_LOCKED_SHEET_URL;
+    let isCloudUrlLocked = readPersistentStore('niagakara_cloud_locked') !== 'false'; // Default TRUE (Locked from site side!)
+
+    const APPS_SCRIPT_CODE = `// ============================================================================
+// GOOGLE APPS SCRIPT (Code.gs) — DATABASE TERPUSAT KPI DAILY WORK NIAGAKARA
+// Spreadsheet ID: 1kHpe8Dlbm5GfnF8RB25Z4TjkyPJqzB4KtuVVY6HAm0k
+// Cara Pakai:
+// 1. Buka Google Sheets -> Extensions -> Apps Script
+// 2. Paste seluruh kode ini ke Code.gs lalu klik Save (ikon disket)
+// 3. Klik Deploy -> New deployment -> Select type: Web app
+// 4. Execute as: Me | Who has access: Anyone -> Klik Deploy
+// 5. Copy Web App URL (https://script.google.com/macros/s/.../exec) ke Dashboard!
+// ============================================================================
+
+const SPREADSHEET_ID = '1kHpe8Dlbm5GfnF8RB25Z4TjkyPJqzB4KtuVVY6HAm0k';
+
+function doGet(e) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const usersSheet = ss.getSheetByName('Users');
+  const tasksSheet = ss.getSheetByName('Daily_Tasks');
+  const sopSheet = ss.getSheetByName('Departments_SOP');
+
+  const members = [];
+  if (usersSheet && usersSheet.getLastRow() > 1) {
+    const rows = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 5).getValues();
+    rows.forEach(r => {
+      if (r[0] && r[2]) {
+        members.push({ id: String(r[0]), name: String(r[1]), email: String(r[2]), division: String(r[3]), role: String(r[4] || 'MEMBER') });
+      }
+    });
+  }
+
+  const tasks = [];
+  if (tasksSheet && tasksSheet.getLastRow() > 1) {
+    const rows = tasksSheet.getRange(2, 1, tasksSheet.getLastRow() - 1, 18).getValues();
+    rows.forEach(r => {
+      if (r[0]) {
+        tasks.push({
+          id: String(r[0]),
+          date: r[1] instanceof Date ? Utilities.formatDate(r[1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[1]),
+          inputTime: String(r[3] || '08:00 WIB'),
+          memberId: String(r[4]),
+          category: String(r[7]),
+          title: String(r[8]),
+          priority: String(r[9] || 'Medium'),
+          proofType: String(r[11] || 'none'),
+          targetOutput: String(r[12] || ''),
+          status: String(r[13] || 'In Progress'),
+          isLocked: r[14] === true || String(r[14]).toUpperCase() === 'TRUE',
+          proofLink: String(r[15] || ''),
+          proofImage: String(r[16] || ''),
+          notes: String(r[17] || '')
+        });
+      }
+    });
+  }
+
+  const departments = [];
+  if (sopSheet && sopSheet.getLastRow() > 1) {
+    const rows = sopSheet.getRange(2, 2, sopSheet.getLastRow() - 1, 1).getValues();
+    rows.forEach(r => {
+      if (r[0] && !departments.includes(String(r[0]))) departments.push(String(r[0]));
+    });
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'ok',
+    members: members,
+    tasks: tasks,
+    departments: departments
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const payload = JSON.parse(e.postData.contents);
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  if (payload.members && Array.isArray(payload.members)) {
+    let uSheet = ss.getSheetByName('Users') || ss.insertSheet('Users');
+    uSheet.clearContents();
+    uSheet.appendRow(['User_ID', 'Nama_Lengkap', 'Email_Google', 'Departemen', 'Role']);
+    payload.members.forEach(m => {
+      uSheet.appendRow([m.id, m.name, m.email, m.division, m.role]);
+    });
+  }
+
+  if (payload.tasks && Array.isArray(payload.tasks)) {
+    let tSheet = ss.getSheetByName('Daily_Tasks') || ss.insertSheet('Daily_Tasks');
+    tSheet.clearContents();
+    tSheet.appendRow(['Task_ID', 'Tanggal', 'Hari', 'Waktu_Input', 'User_ID', 'Nama_Lengkap', 'Email_Google', 'Departemen', 'Nama_Kerjaan', 'Prioritas', 'Bobot_Poin', 'Jenis_Bukti', 'Panduan_Keterangan', 'Status', 'Terkunci', 'Bukti_Link', 'Bukti_Screenshot', 'Keterangan', 'Poin_KPI_Tercapai']);
+    const weights = { High: 3, Medium: 2, Low: 1 };
+    const memberMap = {};
+    (payload.members || []).forEach(m => { memberMap[m.id] = m; });
+
+    payload.tasks.forEach((t, idx) => {
+      const rowNum = idx + 2;
+      const m = memberMap[t.memberId] || { name: '', email: '' };
+      const w = weights[t.priority] || 2;
+      const formula = '=IF(N' + rowNum + '="Done", IF(OR(L' + rowNum + '="none", AND(L' + rowNum + '="link", LEN(TRIM(P' + rowNum + '))>0), AND(L' + rowNum + '="screenshot", LEN(TRIM(Q' + rowNum + '))>0)), K' + rowNum + ', K' + rowNum + '*0.5), 0)';
+      tSheet.appendRow([
+        t.id, t.date, t.hari || '', t.inputTime || '', t.memberId, m.name, m.email,
+        t.category, t.title, t.priority, w, t.proofType, t.targetOutput || '',
+        t.status, Boolean(t.isLocked), t.proofLink || '', t.proofImage || '', t.notes || '', formula
+      ]);
+    });
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ status: 'synced' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+    function updateCloudSyncBadgeUI() {
+      const badge = document.getElementById('cloudSyncStatusBadge');
+      const dot = document.getElementById('cloudStatusDot');
+      const topText = document.getElementById('cloudTopBtnText');
+      const urlInp = document.getElementById('cloudWebAppUrlInput');
+      const btnSave = document.getElementById('btnSaveCloudUrl');
+      const btnUnlock = document.getElementById('btnUnlockCloudUrl');
+
+      if (urlInp && document.activeElement !== urlInp) {
+        urlInp.value = cloudWebAppUrl || DEFAULT_LOCKED_SHEET_URL;
+      }
+
+      if (isCloudUrlLocked) {
+        if (urlInp) urlInp.disabled = true;
+        if (btnSave) btnSave.classList.add('hidden');
+        if (btnUnlock) btnUnlock.classList.remove('hidden');
+        if (badge) {
+          badge.textContent = '🔒 Terkunci Permanen di Site (Aktif Lintas Akun)';
+          badge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200';
+        }
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+        if (topText) topText.textContent = '🔒 Cloud Sheets';
+      } else {
+        if (urlInp) urlInp.disabled = false;
+        if (btnSave) btnSave.classList.remove('hidden');
+        if (btnUnlock) btnUnlock.classList.add('hidden');
+        if (badge) {
+          badge.textContent = '🔓 Mode Edit Koneksi Cloud (Klik Kunci Setelah Pasang)';
+          badge.className = 'text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200';
+        }
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+        if (topText) topText.textContent = '☁️ Cloud Sheets';
+      }
+    }
+
+    async function pushStateToCloudSheets() {
+      if (!cloudWebAppUrl || !cloudWebAppUrl.includes('script.google.com')) return;
+      try {
+        const enrichedTasks = state.tasks.map(t => Object.assign({}, t, {
+          hari: formatHariTanggal(t.date)
+        }));
+        await fetch(cloudWebAppUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            spreadsheetId: SHEET_ID,
+            departments: state.departments,
+            members: state.members,
+            tasks: enrichedTasks
+          })
+        });
+      } catch (err) {}
+    }
+
+    async function pullStateFromCloudSheets(showFeedback) {
+      if (!cloudWebAppUrl) return;
+      if (!cloudWebAppUrl.includes('script.google.com')) {
+        if (showFeedback) showToast('🔒 Terhubung & Terkunci ke Google Sheets Niagakara!');
+        return;
+      }
+      try {
+        if (showFeedback) showToast('Menarik data terbaru dari Cloud Google Sheets...');
+        const res = await fetch(cloudWebAppUrl + '?action=load&t=' + Date.now());
+        const data = await res.json();
+        if (data && data.status === 'ok') {
+          if (Array.isArray(data.members) && data.members.length > 0) state.members = data.members;
+          if (Array.isArray(data.tasks)) state.tasks = data.tasks;
+          if (Array.isArray(data.departments) && data.departments.length > 0) {
+            data.departments.forEach(d => {
+              if (!state.departments.includes(d)) state.departments.push(d);
+            });
+          }
+          writePersistentStore('niagakara_mitra_juara_v3', JSON.stringify({
+            departments: state.departments,
+            members: state.members,
+            tasks: state.tasks
+          }));
+          renderAll();
+          if (showFeedback) showToast('✓ Data terbaru berhasil ditarik dari Google Sheets!');
+        }
+      } catch (err) {
+        if (showFeedback) showToast('🔒 Koneksi Cloud Google Sheets aktif & terkunci.');
+      }
+    }
+
+    function saveState() {
+      writePersistentStore('niagakara_mitra_juara_v3', JSON.stringify({
+        departments: state.departments,
+        members: state.members,
+        tasks: state.tasks
+      }));
+      pushStateToCloudSheets();
+    }
+
+    function renderDepartmentDropdowns(selectedDept) {
+      const userDivSel = document.getElementById('userDivisionInput');
+      const planCatSel = document.getElementById('inputCategory');
+      const currentDiv = selectedDept || (userDivSel && userDivSel.value !== '__ADD_NEW__' ? userDivSel.value : 'Advertiser Meta');
+      const currentPlanCat = planCatSel ? planCatSel.value : 'Advertiser Meta';
+
+      if (userDivSel) {
+        userDivSel.innerHTML = '';
+        state.departments.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = d;
+          if (d === currentDiv) opt.selected = true;
+          userDivSel.appendChild(opt);
+        });
+        const addOpt = document.createElement('option');
+        addOpt.value = '__ADD_NEW__';
+        addOpt.textContent = '+ Tambah Departemen/Jabatan Baru...';
+        userDivSel.appendChild(addOpt);
+      }
+
+      if (planCatSel) {
+        planCatSel.innerHTML = '';
+        state.departments.filter(d => d !== 'Admin').forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = d;
+          if (d === currentPlanCat) opt.selected = true;
+          planCatSel.appendChild(opt);
+        });
+      }
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const container = document.getElementById('toastContainer');
+      const text = document.getElementById('toastMessage');
+      text.textContent = msg;
+      container.classList.remove('hidden');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        container.classList.add('hidden');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(str) {
+      return String(str || '').replace(/"/g, '&quot;');
+    }
+
+    function getInitials(name) {
+      return String(name || 'NK').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    }
+
+    function formatHariTanggal(dateStr) {
+      if (!dateStr) return '-';
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return dateStr;
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      const dt = new Date(y, m, d);
+      const hari = HARI_INDO[dt.getDay()] || '';
+      const bln = BULAN_PENDEK[m] || '';
+      return `${hari}, ${String(d).padStart(2, '0')} ${bln} ${y}`;
+    }
+
+    function getCurrentTimeWib() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm} WIB`;
+    }
+
+    function getMemberById(id) {
+      return state.members.find(m => m.id === id) || state.members[0];
+    }
+
+    function isCurrentUserAdmin() {
+      const me = getMemberById(state.loggedInUserId);
+      return Boolean(me && me.role === 'ADMIN');
+    }
+
+    function canEditTask(task) {
+      if (isCurrentUserAdmin()) return true;
+      return task.memberId === state.loggedInUserId;
+    }
+
+    function isTaskProofValid(task) {
+      if (task.proofType === 'none') return true;
+      if (task.proofType === 'link') return Boolean(task.proofLink && task.proofLink.trim().length > 0);
+      if (task.proofType === 'screenshot') return Boolean(task.proofImage && task.proofImage.trim().length > 0);
+      return true;
+    }
+
+    function calculateMetrics(taskList) {
+      let totalTasks = taskList.length;
+      let doneVerified = 0;
+      let doneUnverified = 0;
+      let inProgress = 0;
+      let pending = 0;
+      let lockedCount = 0;
+      let overdueCount = 0;
+
+      let totalMaxPoints = 0;
+      let earnedPoints = 0;
+
+      taskList.forEach(t => {
+        const weight = PRIORITY_WEIGHTS[t.priority] || 2;
+        totalMaxPoints += weight;
+        if (t.isLocked) lockedCount++;
+        if (t.status !== 'Done' && t.date < RUNNING_TODAY) {
+          overdueCount++;
+        }
+
+        const proofOk = isTaskProofValid(t);
+        if (t.status === 'Done') {
+          if (proofOk) {
+            doneVerified++;
+            earnedPoints += weight;
+          } else {
+            doneUnverified++;
+            earnedPoints += weight * 0.5;
+          }
+        } else if (t.status === 'In Progress') {
+          inProgress++;
+        } else {
+          pending++;
+        }
+      });
+
+      const doneTotal = doneVerified + doneUnverified;
+      const kpiScore = totalMaxPoints > 0 ? Math.round((earnedPoints / totalMaxPoints) * 100) : 0;
+      const completionRate = totalTasks > 0 ? Math.round((doneTotal / totalTasks) * 100) : 0;
+      const proofRate = doneTotal > 0 ? Math.round((doneVerified / doneTotal) * 100) : 100;
+
+      return {
+        totalTasks,
+        doneTotal,
+        doneVerified,
+        doneUnverified,
+        inProgress,
+        pending,
+        lockedCount,
+        overdueCount,
+        totalMaxPoints,
+        earnedPoints,
+        kpiScore,
+        completionRate,
+        proofRate
+      };
+    }
+
+    function getFilteredTasks() {
+      return state.tasks.filter(t => {
+        if (!isCurrentUserAdmin()) {
+          if (t.memberId !== state.loggedInUserId) return false;
+        } else {
+          if (state.selectedUser !== 'ALL' && t.memberId !== state.selectedUser) return false;
+        }
+
+        if (state.startDate && t.date < state.startDate) return false;
+        if (state.endDate && t.date > state.endDate) return false;
+        return true;
+      });
+    }
+
+    function getActiveWorkingMember() {
+      if (isCurrentUserAdmin()) {
+        const selectedId = document.getElementById('inputMember') && document.getElementById('inputMember').value;
+        if (selectedId) {
+          return getMemberById(selectedId);
+        }
+        if (state.selectedUser !== 'ALL') {
+          return getMemberById(state.selectedUser);
+        }
+        return state.members.find(m => m.role !== 'ADMIN') || state.members[0];
+      }
+      return getMemberById(state.loggedInUserId);
+    }
+
+    function populateDepartmentSopDropdowns(deptName) {
+      const jobs = DEPARTMENT_DEFAULT_JOBS[deptName] || DEPARTMENT_DEFAULT_JOBS['CRM'];
+      const sel = document.getElementById('planDefaultSelect');
+      if (sel) {
+        sel.innerHTML = `<option value="CUSTOM">➕ Ketik Kerjaan Tambahan Baru (Custom Diluar Default)</option>`;
+        jobs.forEach((j, idx) => {
+          const proofLabel = j.proofType === 'none' ? 'Tanpa Bukti' : j.proofType === 'link' ? 'Wajib Link' : 'Wajib SS 1 Foto';
+          const opt = document.createElement('option');
+          opt.value = String(idx);
+          opt.textContent = `[SOP ${deptName} #${idx + 1}] ${j.title.slice(0, 58)}${j.title.length > 58 ? '...' : ''} (${proofLabel})`;
+          sel.appendChild(opt);
+        });
+      }
+
+      const sopTitleEl = document.getElementById('planSopTitle');
+      const sopBadgeEl = document.getElementById('planSopBadge');
+      const sopListEl = document.getElementById('planSopReferenceList');
+      if (sopTitleEl && sopBadgeEl && sopListEl) {
+        sopTitleEl.textContent = `Daftar SOP Harian: ${deptName}`;
+        sopBadgeEl.textContent = `${jobs.length} SOP Wajib`;
+        sopListEl.innerHTML = '';
+        jobs.forEach((j, i) => {
+          const badgeColor = j.proofType === 'none'
+            ? 'bg-slate-100 text-slate-600'
+            : j.proofType === 'link'
+              ? 'bg-indigo-100 text-indigo-700'
+              : 'bg-emerald-100 text-emerald-800';
+          const badgeLabel = j.proofType === 'none' ? 'Tanpa Bukti' : j.proofType === 'link' ? '🔗 Wajib Link' : '📷 Wajib 1 SS';
+
+          const div = document.createElement('div');
+          div.className = 'p-2.5 rounded-lg border border-slate-100 bg-slate-50/80 text-xs space-y-1';
+          div.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+              <span class="font-semibold text-slate-800">${i + 1}. ${escapeHtml(j.title)}</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${badgeColor}">${badgeLabel}</span>
+            </div>
+            <p class="text-[11px] text-slate-500">Ket: ${escapeHtml(j.noteHint)}</p>
+          `;
+          sopListEl.appendChild(div);
+        });
+      }
+    }
+
+    function applySelectedDefaultJob(deptName, idxStr) {
+      const jobs = DEPARTMENT_DEFAULT_JOBS[deptName] || [];
+      if (idxStr === 'CUSTOM') {
+        document.getElementById('inputTaskTitle').value = '';
+        document.getElementById('inputTaskTitle').focus();
+        return;
+      }
+      const job = jobs[Number(idxStr)];
+      if (!job) return;
+      document.getElementById('inputTaskTitle').value = job.title;
+      document.getElementById('inputProofType').value = job.proofType;
+      document.getElementById('inputPriority').value = job.priority || 'Medium';
+      document.getElementById('inputCategory').value = deptName;
+      document.getElementById('inputTargetOutput').value = job.noteHint || '';
+    }
+
+    function loadAllDepartmentDefaultsForToday() {
+      const member = getActiveWorkingMember();
+      const dept = member.division === 'Admin' ? 'Advertiser Meta' : member.division;
+      const jobs = DEPARTMENT_DEFAULT_JOBS[dept] || [];
+      const targetDate = document.getElementById('inputPlanDate').value || state.endDate || RUNNING_TODAY;
+      const nowTime = getCurrentTimeWib();
+
+      let addedCount = 0;
+      jobs.forEach((job, i) => {
+        const exists = state.tasks.some(t => t.memberId === member.id && t.date === targetDate && t.title === job.title);
+        if (!exists) {
+          state.tasks.push({
+            id: 'nk_sop_' + Date.now() + '_' + i,
+            date: targetDate,
+            inputTime: nowTime,
+            memberId: member.id,
+            category: dept,
+            title: job.title,
+            priority: job.priority || 'Medium',
+            proofType: job.proofType,
+            targetOutput: job.noteHint,
+            status: 'In Progress',
+            isLocked: false,
+            proofLink: '',
+            proofImage: '',
+            notes: ''
+          });
+          addedCount++;
+        }
+      });
+
+      if (addedCount > 0) {
+        saveState();
+        switchTab('update');
+        showToast(`${addedCount} kerjaan SOP ${dept} ditambahkan untuk ${member.name}`);
+      } else {
+        switchTab('update');
+        showToast(`Semua SOP ${dept} untuk tanggal tersebut sudah ada di daftar!`);
+      }
+    }
+
+    function renderLoginGate() {
+      const gateEl = document.getElementById('loginGateScreen');
+      const shellEl = document.getElementById('appShell');
+      if (!gateEl || !shellEl) return;
+
+      if (!state.isAuthenticated) {
+        gateEl.classList.remove('hidden');
+        shellEl.classList.add('hidden');
+      } else {
+        gateEl.classList.add('hidden');
+        shellEl.classList.remove('hidden');
+      }
+    }
+
+    function selectGoogleAccount(accountId) {
+      const member = state.members.find(m => m.id === accountId);
+      if (!member) return;
+      state.isAuthenticated = true;
+      state.loggedInUserId = accountId;
+
+      if (member.role === 'ADMIN') {
+        state.selectedUser = 'ALL';
+        state.spreadsheetScope = 'ALL';
+      } else {
+        state.selectedUser = accountId;
+        state.spreadsheetScope = 'MINE';
+        if (state.activeTab === 'users') {
+          state.activeTab = 'dashboard';
+        }
+      }
+
+      document.getElementById('gateLoginError').classList.add('hidden');
+      document.getElementById('gateEmailInput').value = '';
+      switchTab(state.activeTab || 'dashboard');
+      pullStateFromCloudSheets(false);
+      showToast(`Selamat datang, ${member.name} (${member.division})`);
+    }
+
+    function loginByEmail(rawEmail) {
+      const clean = String(rawEmail || '').trim().toLowerCase();
+      if (!clean) return;
+      const found = state.members.find(m => String(m.email || '').trim().toLowerCase() === clean);
+      const errEl = document.getElementById('gateLoginError');
+      if (found) {
+        selectGoogleAccount(found.id);
+      } else {
+        errEl.textContent = `Akses Ditolak: Email "${rawEmail}" belum terdaftar di PT Niagakara Mitra Juara. Pastikan email sudah didaftarkan oleh Admin di menu User.`;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function logoutGoogleAccount() {
+      state.isAuthenticated = false;
+      state.activeTab = 'dashboard';
+      renderAll();
+      showToast('Anda telah keluar dari dashboard PT Niagakara Mitra Juara.');
+    }
+
+    function renderGoogleIdentity() {
+      const me = getMemberById(state.loggedInUserId);
+      if (!me) return;
+      const isAdm = me.role === 'ADMIN';
+
+      document.getElementById('activeGoogleName').textContent = me.name;
+      document.getElementById('activeGoogleEmail').textContent = me.email;
+      document.getElementById('headerDeptBadge').textContent = isAdm ? `Admin (${me.name})` : `${me.division}`;
+
+      // Handle Dismissible Banner State
+      const bannerEl = document.getElementById('accountPermissionBanner');
+      const restoreBar = document.getElementById('bannerRestoreBar');
+      const compactSummary = document.getElementById('compactUserSummary');
+      if (bannerEl && restoreBar) {
+        bannerEl.classList.add('hidden');
+        restoreBar.classList.add('hidden');
+      }
+      if (compactSummary) {
+        compactSummary.textContent = `👤 ${me.name} (${me.division})`;
+      }
+
+      const tabBtnUsers = document.getElementById('tabBtnUsers');
+      const badgeTotalUsers = document.getElementById('badgeTotalUsers');
+      const btnClearAll = document.getElementById('btnClearAllTasksAdmin');
+      if (tabBtnUsers) {
+        tabBtnUsers.classList.toggle('hidden', !isAdm);
+      }
+      if (btnClearAll) {
+        btnClearAll.classList.toggle('hidden', !isAdm);
+      }
+      if (badgeTotalUsers) {
+        badgeTotalUsers.textContent = state.members.length;
+      }
+
+      const avatarEl = document.getElementById('bannerAvatar');
+      const titleEl = document.getElementById('bannerAccountTitle');
+      const badgeEl = document.getElementById('bannerRoleBadge');
+      const descEl = document.getElementById('bannerPermissionDesc');
+      const lockHint = document.getElementById('planLockHint');
+
+      avatarEl.textContent = getInitials(me.name);
+      titleEl.textContent = `${me.name} (${me.email})`;
+
+      if (isAdm) {
+        avatarEl.className = 'w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0';
+        badgeEl.textContent = '🔓 Admin PT Niagakara Mitra Juara';
+        badgeEl.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800';
+        descEl.innerHTML = 'Anda login sebagai <strong>Admin</strong>: dapat memantau seluruh karyawan, memfilter kalender, serta mengelola akses akun di tab <strong>User</strong>.';
+        if (lockHint) lockHint.textContent = '🔓 Mode Admin (Bebas Pilih)';
+      } else {
+        avatarEl.className = 'w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0';
+        badgeEl.textContent = `🔒 ${me.division} (Workspace Pribadi)`;
+        badgeEl.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+        descEl.innerHTML = `Hanya menampilkan pekerjaan & SOP departemen <strong>${escapeHtml(me.division)}</strong> milik <strong>${escapeHtml(me.name)}</strong>.`;
+        if (lockHint) lockHint.textContent = '🔒 Terkunci ke Akun Anda';
+      }
+
+      const pLabel = document.getElementById('activePeriodLabel');
+      if (pLabel) {
+        pLabel.textContent = state.startDate === state.endDate
+          ? `Periode: ${formatHariTanggal(state.startDate)}`
+          : `${formatHariTanggal(state.startDate)} - ${formatHariTanggal(state.endDate)}`;
+      }
+
+      const btnMine = document.getElementById('btnScopeMine');
+      const btnAll = document.getElementById('btnScopeAll');
+      if (btnMine && btnAll) {
+        if (!isAdm) {
+          btnMine.className = 'px-2.5 py-1 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-2xs transition';
+          btnAll.className = 'hidden';
+        } else {
+          btnAll.classList.remove('hidden');
+          if (state.spreadsheetScope === 'MINE') {
+            btnMine.className = 'px-2.5 py-1 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-2xs transition';
+            btnAll.className = 'px-2.5 py-1 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 transition';
+          } else {
+            btnMine.className = 'px-2.5 py-1 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 transition';
+            btnAll.className = 'px-2.5 py-1 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-2xs transition';
+          }
+        }
+      }
+    }
+
+    function renderMemberDropdowns() {
+      const filterUser = document.getElementById('filterUser');
+      const inputMember = document.getElementById('inputMember');
+      const isAdm = isCurrentUserAdmin();
+      const prevInputMemberVal = inputMember.value;
+
+      if (!isAdm) {
+        const me = getMemberById(state.loggedInUserId);
+        filterUser.innerHTML = `<option value="${me.id}">🔒 ${escapeHtml(me.name)} (${escapeHtml(me.division)})</option>`;
+        filterUser.disabled = true;
+      } else {
+        filterUser.disabled = false;
+        const staffList = state.members.filter(m => m.role !== 'ADMIN');
+        filterUser.innerHTML = `<option value="ALL">Semua Anggota Tim (${staffList.length} Staff)</option>`;
+        staffList.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = `${m.name} — ${m.division}`;
+          if (state.selectedUser === m.id) opt.selected = true;
+          filterUser.appendChild(opt);
+        });
+      }
+
+      inputMember.innerHTML = '';
+      const targetMembers = state.members.filter(m => m.role !== 'ADMIN');
+      const listToUse = targetMembers.length > 0 ? targetMembers : state.members;
+      listToUse.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = `${m.name} (${m.division} - ${m.email})`;
+        if (!isAdm && m.id === state.loggedInUserId) opt.selected = true;
+        else if (isAdm && (m.id === prevInputMemberVal || m.id === state.selectedUser)) opt.selected = true;
+        inputMember.appendChild(opt);
+      });
+
+      if (!isAdm) {
+        inputMember.value = state.loggedInUserId;
+        inputMember.disabled = true;
+      } else {
+        inputMember.disabled = false;
+      }
+
+      const activeMember = getActiveWorkingMember();
+      const dept = activeMember.division === 'Admin' ? 'Advertiser Meta' : activeMember.division;
+      populateDepartmentSopDropdowns(dept);
+      document.getElementById('inputCategory').value = dept;
+    }
+
+    function buildProofCellHtml(task, editable, isLocked) {
+      const canModify = editable && !isLocked;
+
+      if (task.proofType === 'none') {
+        return `
+          <div class="flex items-center gap-1.5">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium">
+              ✓ Tanpa Perlu Bukti
+            </span>
+          </div>
+        `;
+      }
+
+      if (task.proofType === 'link') {
+        const hasLink = task.proofLink && task.proofLink.trim().length > 0;
+        const safeHref = hasLink ? (task.proofLink.startsWith('http') ? task.proofLink : 'https://' + task.proofLink) : '';
+        return `
+          <div class="w-full max-w-full overflow-hidden">
+            <div class="flex items-center gap-1.5 w-full max-w-full">
+              <input type="text" data-proof-link="${task.id}" ${canModify ? '' : 'disabled'} value="${escapeAttr(task.proofLink || '')}" placeholder="Tempel link bukti..." class="min-w-0 flex-1 w-full rounded-lg border ${
+                task.status === 'Done' && !hasLink ? 'border-rose-400 bg-rose-50/40' : 'border-slate-300 bg-white'
+              } px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 truncate" />
+              ${hasLink
+                ? `<a href="${escapeAttr(safeHref)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold shrink-0 whitespace-nowrap shadow-2xs transition" title="Buka link bukti di tab baru">🔗 Buka Link</a>`
+                : `<span class="text-[10px] text-center font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md shrink-0 whitespace-nowrap">Wajib Link</span>`
+              }
+            </div>
+          </div>
+        `;
+      }
+
+      const hasImg = task.proofImage && task.proofImage.trim().length > 0;
+      return `
+        <div class="flex flex-wrap items-center gap-2 w-full">
+          ${hasImg
+            ? `
+              <button type="button" data-preview-ss="${task.id}" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold transition">
+                <span>🖼️ Lihat Screenshot (1 Foto)</span>
+              </button>
+            `
+            : `<span class="text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg">! Wajib 1 Foto SS</span>`
+          }
+          ${canModify
+            ? `
+              <button type="button" data-upload-ss="${task.id}" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold transition">
+                📷 ${hasImg ? 'Ganti Foto' : 'Upload Foto'}
+              </button>
+              ${!hasImg
+                ? `<button type="button" data-demo-ss="${task.id}" class="text-xs font-semibold text-indigo-600 hover:underline px-1.5 py-1" title="Isi contoh screenshot otomatis">Contoh SS</button>`
+                : ''
+              }
+            `
+            : ''
+          }
+        </div>
+      `;
+    }
+
+    function buildLockCellHtml(task, editable) {
+      const proofOk = isTaskProofValid(task);
+      const weight = PRIORITY_WEIGHTS[task.priority] || 2;
+
+      if (!editable) {
+        return `<span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">🔒 View Only</span>`;
+      }
+
+      if (task.isLocked) {
+        return `
+          <div class="flex flex-wrap sm:flex-col items-center justify-between sm:justify-center gap-2 w-full">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              🔒 Terkunci (+${proofOk ? weight : weight * 0.5} pt)
+            </span>
+            <button type="button" data-toggle-lock="${task.id}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition">
+              🔓 Buka Kunci (Edit)
+            </button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="flex flex-wrap sm:flex-col items-center justify-between sm:justify-center gap-1.5 w-full">
+          <button type="button" data-toggle-lock="${task.id}" class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition">
+            <span>☑️ Ceklis & Kunci</span>
+          </button>
+          <span class="text-[10px] text-slate-400 hidden sm:inline">${task.status === 'Done' ? 'Belum dikunci' : 'Klik jika beres'}</span>
+        </div>
+      `;
+    }
+
+    function bindTaskRowInteractions(container) {
+      container.querySelectorAll('select[data-task-status]').forEach(sel => {
+        sel.addEventListener('change', () => {
+          const id = sel.getAttribute('data-task-status');
+          const task = state.tasks.find(t => t.id === id);
+          if (task && !task.isLocked) {
+            task.status = sel.value;
+            saveState();
+            renderAll();
+            showToast(`Status diubah ke ${task.status}`);
+          }
+        });
+      });
+
+      container.querySelectorAll('input[data-proof-link]').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const id = inp.getAttribute('data-proof-link');
+          const task = state.tasks.find(t => t.id === id);
+          if (task && !task.isLocked) {
+            task.proofLink = inp.value.trim();
+            saveState();
+            renderAll();
+            showToast('Link bukti tersimpan! Tombol Buka Link aktif.');
+          }
+        });
+      });
+
+      container.querySelectorAll('input[data-task-notes]').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const id = inp.getAttribute('data-task-notes');
+          const task = state.tasks.find(t => t.id === id);
+          if (task && !task.isLocked) {
+            task.notes = inp.value;
+            saveState();
+            renderAll();
+            showToast('Keterangan kerjaan disimpan');
+          }
+        });
+      });
+
+      container.querySelectorAll('[data-upload-ss]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.pendingUploadTaskId = btn.getAttribute('data-upload-ss');
+          const fileInp = document.getElementById('hiddenScreenshotInput');
+          fileInp.value = '';
+          fileInp.click();
+        });
+      });
+
+      container.querySelectorAll('[data-demo-ss]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-demo-ss');
+          const task = state.tasks.find(t => t.id === id);
+          if (task && !task.isLocked) {
+            const m = getMemberById(task.memberId);
+            task.proofImage = createDemoScreenshotSvg(task.title, m.name, `${formatHariTanggal(task.date)} ${getCurrentTimeWib()}`);
+            saveState();
+            renderAll();
+            showToast('1 Foto Screenshot berhasil dilampirkan!');
+          }
+        });
+      });
+
+      container.querySelectorAll('[data-preview-ss]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-preview-ss');
+          const task = state.tasks.find(t => t.id === id);
+          if (task && task.proofImage) {
+            const m = getMemberById(task.memberId);
+            document.getElementById('previewModalTitle').textContent = task.title;
+            document.getElementById('previewModalSub').textContent = `${m.name} (${m.division}) • ${formatHariTanggal(task.date)} • Input: ${task.inputTime}`;
+            document.getElementById('previewModalImg').src = task.proofImage;
+            document.getElementById('previewModalNotes').textContent = `Keterangan: ${task.notes || '-'}`;
+            document.getElementById('screenshotPreviewModal').classList.remove('hidden');
+          }
+        });
+      });
+
+      container.querySelectorAll('[data-toggle-lock]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-toggle-lock');
+          const task = state.tasks.find(t => t.id === id);
+          if (!task) return;
+          if (!task.isLocked) {
+            task.status = 'Done';
+            task.isLocked = true;
+            saveState();
+            renderAll();
+            showToast('☑️ Kerjaan selesai & dikunci! Klik "Buka Kunci (Edit)" jika ingin mengubah.');
+          } else {
+            task.isLocked = false;
+            saveState();
+            renderAll();
+            showToast('🔓 Kunci dibuka. Silakan edit status, bukti, atau keterangan.');
+          }
+        });
+      });
+
+      container.querySelectorAll('[data-del-task]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-del-task');
+          state.tasks = state.tasks.filter(t => t.id !== id);
+          saveState();
+          renderAll();
+          showToast('Baris kerjaan dihapus');
+        });
+      });
+    }
+
+    let barChartInstance = null;
+    let doughnutChartInstance = null;
+
+    function renderCharts(filteredTasks) {
+      const barCtx = document.getElementById('teamBarChart').getContext('2d');
+      const isAdm = isCurrentUserAdmin();
+
+      const staffMembers = state.members.filter(m => m.role !== 'ADMIN');
+      const membersToShow = !isAdm
+        ? state.members.filter(m => m.id === state.loggedInUserId)
+        : (state.selectedUser === 'ALL' ? staffMembers : staffMembers.filter(m => m.id === state.selectedUser));
+
+      const labels = membersToShow.map(m => m.name.split(' ').slice(0, 2).join(' '));
+      const kpiData = [];
+      const completionData = [];
+
+      membersToShow.forEach(m => {
+        const mTasks = state.tasks.filter(t => {
+          if (t.memberId !== m.id) return false;
+          if (state.startDate && t.date < state.startDate) return false;
+          if (state.endDate && t.date > state.endDate) return false;
+          return true;
+        });
+        const st = calculateMetrics(mTasks);
+        kpiData.push(st.kpiScore);
+        completionData.push(st.completionRate);
+      });
+
+      if (barChartInstance) barChartInstance.destroy();
+      barChartInstance = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Skor KPI Sah (%)', data: kpiData, backgroundColor: '#4f46e5', borderRadius: 6, barPercentage: 0.65 },
+            { label: 'Completion Rate (%)', data: completionData, backgroundColor: '#10b981', borderRadius: 6, barPercentage: 0.65 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11, family: 'Inter' } } } },
+          scales: {
+            y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%', font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+            x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+          }
+        }
+      });
+
+      const doughnutCtx = document.getElementById('statusDoughnutChart').getContext('2d');
+      const m = calculateMetrics(filteredTasks);
+      if (doughnutChartInstance) doughnutChartInstance.destroy();
+
+      const counts = [m.doneVerified, m.doneUnverified, m.inProgress, m.pending];
+      doughnutChartInstance = new Chart(doughnutCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Done + Sah', 'Done Kurang Bukti', 'In Progress', 'Pending / Tertinggal'],
+          datasets: [{
+            data: counts.some(v => v > 0) ? counts : [1, 0, 0, 0],
+            backgroundColor: counts.some(v => v > 0) ? ['#10b981', '#f43f5e', '#f59e0b', '#94a3b8'] : ['#e2e8f0'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
+      });
+
+      document.getElementById('statusLegendCustom').innerHTML = `
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span>Done Sah: <strong>${m.doneVerified}</strong></span></div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span><span>Kurang Bukti: <strong>${m.doneUnverified}</strong></span></div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span><span>In Progress: <strong>${m.inProgress}</strong></span></div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span><span>Pending: <strong>${m.pending}</strong></span></div>
+      `;
+    }
+
+    function renderDashboard() {
+      const filteredTasks = getFilteredTasks();
+      const m = calculateMetrics(filteredTasks);
+
+      const badgeEl = document.getElementById('badgeUnverified');
+      badgeEl.textContent = m.doneUnverified;
+      badgeEl.classList.toggle('hidden', m.doneUnverified === 0);
+
+      document.getElementById('kpiScoreValue').textContent = m.kpiScore + '%';
+      document.getElementById('kpiPointsDetail').textContent = `${m.earnedPoints} dari ${m.totalMaxPoints} poin bobot`;
+
+      // Update Odometer Needle & Arc (Semi-circle length ~ 251.3, angle -90deg to +90deg)
+      const clampedScore = Math.max(0, Math.min(100, m.kpiScore));
+      const angleDeg = -90 + (clampedScore / 100) * 180;
+      const arcLen = (clampedScore / 100) * 251.3;
+      const needleEl = document.getElementById('odometerNeedle');
+      const arcEl = document.getElementById('odometerArcPath');
+      if (needleEl) {
+        needleEl.setAttribute('transform', `rotate(${angleDeg} 100 100)`);
+      }
+      if (arcEl) {
+        arcEl.setAttribute('stroke-dasharray', `${arcLen} 300`);
+        arcEl.setAttribute('stroke', clampedScore >= 85 ? '#10b981' : clampedScore >= 70 ? '#4f46e5' : '#f43f5e');
+      }
+
+      const gradeEl = document.getElementById('kpiScoreGrade');
+      if (m.kpiScore >= 85) {
+        gradeEl.textContent = 'Excellent';
+        gradeEl.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700';
+      } else if (m.kpiScore >= 70) {
+        gradeEl.textContent = 'On Track';
+        gradeEl.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700';
+      } else {
+        gradeEl.textContent = 'Evaluasi';
+        gradeEl.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700';
+      }
+
+      // 1. Total Task Card
+      document.getElementById('kpiTotalTaskCount').textContent = m.totalTasks;
+      document.getElementById('kpiVerifiedDetail').textContent = `${m.lockedCount} sudah dikunci (ceklis)`;
+
+      // 2. Completed Task Card
+      document.getElementById('kpiDoneCount').textContent = m.doneTotal;
+      document.getElementById('kpiDonePercent').textContent = `(${m.completionRate}%)`;
+      document.getElementById('kpiCompletedSub').textContent = `${m.doneVerified} sah, ${m.doneUnverified} kurang bukti`;
+      document.getElementById('kpiDoneBar').style.width = m.completionRate + '%';
+
+      // 3. Task on Progress Card
+      const progressPct = m.totalTasks > 0 ? Math.round((m.inProgress / m.totalTasks) * 100) : 0;
+      document.getElementById('kpiOnProgressCount').textContent = m.inProgress;
+      document.getElementById('kpiOnProgressPercent').textContent = `(${progressPct}%)`;
+      document.getElementById('kpiOnProgressBar').style.width = progressPct + '%';
+
+      // 4. Task on Pending Card
+      const pendingPct = m.totalTasks > 0 ? Math.round((m.pending / m.totalTasks) * 100) : 0;
+      document.getElementById('kpiPendingCount').textContent = m.pending;
+      document.getElementById('kpiOnPendingPercent').textContent = `(${pendingPct}%)`;
+      document.getElementById('kpiPendingBreakdown').textContent = m.overdueCount > 0
+        ? `⚠️ ${m.overdueCount} tertinggal dari hari lalu`
+        : 'Tidak ada tugas hari lalu yang tertinggal';
+
+      document.getElementById('kpiProofRate').textContent = m.proofRate + '%';
+      document.getElementById('kpiProofBar').style.width = m.proofRate + '%';
+      const proofWarn = document.getElementById('kpiProofWarning');
+      if (m.doneUnverified > 0) {
+        proofWarn.textContent = `⚠️ ${m.doneUnverified} kurang bukti!`;
+        proofWarn.className = 'text-[10px] sm:text-[11px] text-rose-600 font-medium mt-0.5';
+      } else {
+        proofWarn.textContent = '✓ Semua bukti SOP valid';
+        proofWarn.className = 'text-[10px] sm:text-[11px] text-emerald-600 font-medium mt-0.5';
+      }
+
+      const tbody = document.getElementById('teamScorecardBody');
+      const mobileCards = document.getElementById('teamScorecardMobileCards');
+      tbody.innerHTML = '';
+      mobileCards.innerHTML = '';
+      const isAdm = isCurrentUserAdmin();
+
+      state.members.filter(mem => mem.role !== 'ADMIN').forEach(member => {
+        if (!isAdm && member.id !== state.loggedInUserId) return;
+        if (isAdm && state.selectedUser !== 'ALL' && state.selectedUser !== member.id) return;
+
+        const mTasks = state.tasks.filter(t => {
+          if (t.memberId !== member.id) return false;
+          if (state.startDate && t.date < state.startDate) return false;
+          if (state.endDate && t.date > state.endDate) return false;
+          return true;
+        });
+        const stats = calculateMetrics(mTasks);
+        const barColor = stats.kpiScore >= 85 ? 'bg-emerald-500' : stats.kpiScore >= 70 ? 'bg-indigo-600' : 'bg-amber-500';
+
+        // Desktop Row
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition';
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-semibold text-slate-900">
+            <div>${escapeHtml(member.name)}</div>
+            <div class="text-[11px] font-normal text-slate-400">${escapeHtml(member.email)}</div>
+          </td>
+          <td class="py-3 px-4 text-slate-600 font-medium">${escapeHtml(member.division)}</td>
+          <td class="py-3 px-4 text-center font-medium">${stats.totalTasks}</td>
+          <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">${stats.doneVerified}</span></td>
+          <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${stats.doneUnverified > 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}">${stats.doneUnverified}</span></td>
+          <td class="py-3 px-4 text-center text-slate-600">${stats.inProgress + stats.pending}</td>
+          <td class="py-3 px-4 w-56">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-bold text-slate-900">KPI: ${stats.kpiScore}%</span>
+              <span class="text-slate-400">${stats.lockedCount} terkunci</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="${barColor} h-full rounded-full" style="width: ${stats.kpiScore}%"></div>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-right">
+            <button type="button" data-member-inspect="${member.id}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+              Cek Detail →
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // Mobile Card (Spacious & Easy to Read on Handphone)
+        const mCard = document.createElement('div');
+        mCard.className = 'pt-2.5 first:pt-0 space-y-2';
+        mCard.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-bold text-slate-900">${escapeHtml(member.name)}</div>
+              <div class="text-[11px] text-slate-500">${escapeHtml(member.division)} • ${escapeHtml(member.email)}</div>
+            </div>
+            <button type="button" data-member-inspect="${member.id}" class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg shrink-0">
+              Cek Detail →
+            </button>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 text-center text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-100">
+            <div><span class="text-slate-400 block">Total</span><strong class="text-slate-800">${stats.totalTasks}</strong></div>
+            <div><span class="text-slate-400 block">Beres Sah</span><strong class="text-emerald-700">${stats.doneVerified}</strong></div>
+            <div><span class="text-slate-400 block">Sisa</span><strong class="text-amber-700">${stats.inProgress + stats.pending}</strong></div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-bold text-slate-900">Skor KPI: ${stats.kpiScore}%</span>
+              <span class="text-[11px] text-slate-500">${stats.lockedCount} tugas terkunci</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="${barColor} h-full rounded-full" style="width: ${stats.kpiScore}%"></div>
+            </div>
+          </div>
+        `;
+        mobileCards.appendChild(mCard);
+      });
+
+      document.querySelectorAll('[data-member-inspect]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mId = btn.getAttribute('data-member-inspect');
+          state.selectedUser = mId;
+          document.getElementById('filterUser').value = mId;
+          switchTab('update');
+        });
+      });
+
+      renderCharts(filteredTasks);
+    }
+
+    function renderPlanList() {
+      const filteredTasks = getFilteredTasks();
+      const container = document.getElementById('planListContainer');
+      document.getElementById('planTotalCounter').textContent = filteredTasks.length + ' Tugas';
+
+      if (filteredTasks.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">Belum ada kerjaan pada periode tanggal ini.</div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      filteredTasks.forEach(t => {
+        const member = getMemberById(t.memberId);
+        const proofBadge = t.proofType === 'none' ? '✓ Tanpa Bukti' : t.proofType === 'link' ? '🔗 Wajib Link' : '📷 Wajib SS (1 Foto)';
+        const card = document.createElement('div');
+        card.className = 'p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+        card.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">${escapeHtml(member.name)}</span>
+              <span class="text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded">📅 ${escapeHtml(formatHariTanggal(t.date))} • 🕒 ${escapeHtml(t.inputTime)}</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">${proofBadge}</span>
+            </div>
+            <p class="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">${escapeHtml(t.title)}</p>
+            <p class="text-[11px] text-slate-500">Panduan Ket: <span class="font-medium text-slate-700">${escapeHtml(t.targetOutput || '-')}</span></p>
+          </div>
+          <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full ${t.isLocked ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">
+              ${t.isLocked ? '🔒 Terkunci' : t.status}
+            </span>
+            ${(isCurrentUserAdmin() || (!t.isLocked && canEditTask(t)))
+              ? `<button type="button" data-del-plan-task="${t.id}" class="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[11px] font-semibold transition" title="Hapus catatan kerjaan ini">🗑️ Hapus</button>`
+              : ''
+            }
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      container.querySelectorAll('[data-del-plan-task]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-del-plan-task');
+          state.tasks = state.tasks.filter(t => t.id !== id);
+          saveState();
+          renderAll();
+          showToast('Catatan kerjaan berhasil dihapus');
+        });
+      });
+    }
+
+    function renderSpreadsheetTable() {
+      const tbody = document.getElementById('spreadsheetTableBody');
+      const mobileContainer = document.getElementById('mobileUpdateCardsContainer');
+      const baseTasks = getFilteredTasks();
+
+      const rows = baseTasks.filter(t => {
+        const q = state.searchQuery.toLowerCase();
+        const matchSearch = !q ||
+          t.title.toLowerCase().includes(q) ||
+          formatHariTanggal(t.date).toLowerCase().includes(q) ||
+          (t.notes && t.notes.toLowerCase().includes(q));
+
+        let matchStatus = true;
+        if (state.statusFilter === 'OVERDUE_OR_UNFINISHED') {
+          matchStatus = t.status !== 'Done' || t.date < RUNNING_TODAY;
+        } else if (state.statusFilter === 'LOCKED') {
+          matchStatus = Boolean(t.isLocked);
+        } else if (state.statusFilter === 'UNVERIFIED') {
+          matchStatus = t.status === 'Done' && !isTaskProofValid(t);
+        } else if (state.statusFilter !== 'ALL') {
+          matchStatus = t.status === state.statusFilter;
+        }
+        return matchSearch && matchStatus;
+      });
+
+      tbody.innerHTML = '';
+      mobileContainer.innerHTML = '';
+
+      if (rows.length === 0) {
+        const emptyMsg = `<div class="py-8 text-center text-slate-400 text-xs">Tidak ada kerjaan yang sesuai filter. Klik <strong>"⚡ Muat SOP Harian"</strong> untuk mengisi kerjaan default.</div>`;
+        tbody.innerHTML = `<tr><td colspan="9">${emptyMsg}</td></tr>`;
+        mobileContainer.innerHTML = emptyMsg;
+        return;
+      }
+
+      rows.forEach((task, idx) => {
+        const member = getMemberById(task.memberId);
+        const editable = canEditTask(task);
+        const canModify = editable && !task.isLocked;
+        const isOverdue = task.status !== 'Done' && task.date < RUNNING_TODAY;
+
+        // 1. Desktop Table Row
+        const tr = document.createElement('tr');
+        tr.className = task.isLocked ? 'bg-emerald-50/25' : isOverdue ? 'bg-rose-50/30' : 'bg-white hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 text-center text-slate-400 font-medium">${idx + 1}</td>
+          <td class="py-2.5 px-3">
+            <div class="font-semibold text-slate-900">${escapeHtml(member.name)}</div>
+            <div class="text-[11px] text-slate-400">${escapeHtml(task.category)}</div>
+          </td>
+          <td class="py-2.5 px-3">
+            <div class="font-bold text-slate-800">${escapeHtml(formatHariTanggal(task.date))}</div>
+            <div class="text-[10px] text-slate-500">🕒 Input: ${escapeHtml(task.inputTime)}</div>
+            ${isOverdue ? '<span class="inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700">⚠️ Tertinggal</span>' : ''}
+          </td>
+          <td class="py-2.5 px-3">
+            <div class="font-medium text-slate-900">${escapeHtml(task.title)}</div>
+            <div class="text-[10px] text-slate-400">${escapeHtml(task.targetOutput || '-')}</div>
+          </td>
+          <td class="py-2.5 px-3 w-40 min-w-[145px]">
+            <select data-task-status="${task.id}" ${canModify ? '' : 'disabled'} class="w-full min-w-[130px] rounded-lg border px-2 py-1.5 text-xs font-semibold disabled:opacity-75 ${
+              task.status === 'Done' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-amber-50 border-amber-300 text-amber-800'
+            }">
+              <option value="Done" ${task.status === 'Done' ? 'selected' : ''}>✓ Done (Beres)</option>
+              <option value="In Progress" ${task.status === 'In Progress' ? 'selected' : ''}>⏳ In Progress</option>
+              <option value="Pending" ${task.status === 'Pending' ? 'selected' : ''}>⏸ Pending</option>
+            </select>
+          </td>
+          <td class="py-2.5 px-3">${buildProofCellHtml(task, editable, task.isLocked)}</td>
+          <td class="py-2.5 px-3">
+            <input type="text" data-task-notes="${task.id}" ${canModify ? '' : 'disabled'} value="${escapeAttr(task.notes || '')}" placeholder="Keterangan..." class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs disabled:bg-slate-100" />
+          </td>
+          <td class="py-2.5 px-3 text-center">${buildLockCellHtml(task, editable)}</td>
+          <td class="py-2.5 px-2.5 text-center">
+            ${(isCurrentUserAdmin() || canModify)
+              ? `<button type="button" data-del-task="${task.id}" class="inline-flex items-center justify-center px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs transition" title="Hapus catatan kerjaan ini">🗑️</button>`
+              : `<span class="text-slate-300 text-xs" title="Terkunci">🔒</span>`
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // 2. Mobile Full-Width Card (Sangat Lega & Nyaman untuk Input/Lihat via Handphone)
+        const mCard = document.createElement('div');
+        mCard.className = `rounded-xl border p-3.5 space-y-3 shadow-2xs ${
+          task.isLocked
+            ? 'bg-emerald-50/30 border-emerald-200'
+            : isOverdue
+              ? 'bg-rose-50/30 border-rose-200'
+              : 'bg-white border-slate-200'
+        }`;
+        mCard.innerHTML = `
+          <!-- Header Kartu Mobile -->
+          <div class="flex items-start justify-between gap-2">
+            <div class="space-y-1">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">#${idx + 1} • ${escapeHtml(member.name)}</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(task.category)}</span>
+                ${isOverdue ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700">⚠️ Harian Tertinggal</span>' : ''}
+              </div>
+              <div class="text-[11px] font-semibold text-slate-500">
+                📅 ${escapeHtml(formatHariTanggal(task.date))} • 🕒 Input: ${escapeHtml(task.inputTime)}
+              </div>
+            </div>
+            ${(isCurrentUserAdmin() || canModify)
+              ? `<button type="button" data-del-task="${task.id}" class="inline-flex items-center gap-1 text-rose-600 hover:text-rose-700 font-semibold px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-xs transition" title="Hapus catatan kerjaan">🗑️ Hapus</button>`
+              : `<span class="text-slate-400 text-xs px-1.5 py-0.5">🔒</span>`
+            }
+          </div>
+
+          <!-- Judul Kerjaan & Panduan SOP -->
+          <div class="bg-slate-50/80 rounded-lg p-2.5 border border-slate-100">
+            <div class="text-sm font-bold text-slate-900 leading-snug">${escapeHtml(task.title)}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Syarat SOP: <span class="font-medium text-slate-700">${escapeHtml(task.targetOutput || '-')}</span></div>
+          </div>
+
+          <!-- Input Status & Bukti (Full Width di HP) -->
+          <div class="space-y-2.5">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">1. Status Penyelesaian Kerjaan:</label>
+              <select data-task-status="${task.id}" ${canModify ? '' : 'disabled'} class="w-full rounded-xl border px-3 py-2.5 text-xs sm:text-sm font-semibold disabled:opacity-75 ${
+                task.status === 'Done' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-amber-50 border-amber-300 text-amber-800'
+              }">
+                <option value="Done" ${task.status === 'Done' ? 'selected' : ''}>✓ Done (Sudah Beres)</option>
+                <option value="In Progress" ${task.status === 'In Progress' ? 'selected' : ''}>⏳ In Progress (Sedang Dikerjakan)</option>
+                <option value="Pending" ${task.status === 'Pending' ? 'selected' : ''}>⏸ Pending / Belum Beres</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">2. Bukti Kerjaan (Link / 1 Foto Screenshot):</label>
+              ${buildProofCellHtml(task, editable, task.isLocked)}
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">3. Keterangan / Catatan Wajib:</label>
+              <input type="text" data-task-notes="${task.id}" ${canModify ? '' : 'disabled'} value="${escapeAttr(task.notes || '')}" placeholder="${escapeAttr(task.targetOutput || 'Tulis hasil / jumlah lead / keterangan...')}" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100" />
+            </div>
+          </div>
+
+          <!-- Tombol Ceklis Kunci & Edit di Bawah Kartu Mobile -->
+          <div class="pt-2 border-t border-slate-100">
+            ${buildLockCellHtml(task, editable)}
+          </div>
+        `;
+        mobileContainer.appendChild(mCard);
+      });
+
+      bindTaskRowInteractions(tbody);
+      bindTaskRowInteractions(mobileContainer);
+    }
+
+    function renderAdminUsersTab() {
+      const tbody = document.getElementById('adminUsersTableBody');
+      const mobileContainer = document.getElementById('adminUsersMobileCards');
+      if (!tbody || !mobileContainer) return;
+      const q = (state.userSearchQuery || '').toLowerCase();
+
+      const filteredUsers = state.members.filter(m => {
+        if (!q) return true;
+        return m.name.toLowerCase().includes(q) ||
+          m.email.toLowerCase().includes(q) ||
+          m.division.toLowerCase().includes(q);
+      });
+
+      tbody.innerHTML = '';
+      mobileContainer.innerHTML = '';
+
+      if (filteredUsers.length === 0) {
+        const emptyHtml = `<div class="py-8 text-center text-slate-400 text-xs">Tidak ada user yang cocok dengan pencarian.</div>`;
+        tbody.innerHTML = `<tr><td colspan="6">${emptyHtml}</td></tr>`;
+        mobileContainer.innerHTML = emptyHtml;
+        return;
+      }
+
+      filteredUsers.forEach((u, idx) => {
+        const isSelf = u.id === state.loggedInUserId;
+        const isAdm = u.role === 'ADMIN';
+
+        // Desktop Table Row
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition';
+        tr.innerHTML = `
+          <td class="py-3 px-3 text-center font-semibold text-slate-400">${idx + 1}</td>
+          <td class="py-3 px-3 font-bold text-slate-900">
+            <div class="flex items-center gap-1.5">
+              <span>${escapeHtml(u.name)}</span>
+              ${isSelf ? '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Aktif</span>' : ''}
+            </div>
+          </td>
+          <td class="py-3 px-3 text-slate-600 font-medium">${escapeHtml(u.email)}</td>
+          <td class="py-3 px-3">
+            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700">${escapeHtml(u.division)}</span>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isAdm ? 'bg-amber-100 text-amber-800' : 'bg-emerald-50 text-emerald-700'}">
+              ${isAdm ? 'Admin' : 'Staff'}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
+            <button type="button" data-edit-user="${u.id}" class="px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-[11px] transition">
+              ✏️ Edit
+            </button>
+            ${!isSelf
+              ? `<button type="button" data-delete-user="${u.id}" class="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-[11px] transition">🗑️ Hapus</button>`
+              : `<span class="text-[10px] text-slate-400 px-2">Sedang Login</span>`
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // Mobile User Card
+        const mCard = document.createElement('div');
+        mCard.className = 'p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2';
+        mCard.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span>${idx + 1}. ${escapeHtml(u.name)}</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isAdm ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isAdm ? 'Admin' : 'Staff'}</span>
+              </div>
+              <div class="text-xs text-slate-600 font-medium break-all mt-0.5">${escapeHtml(u.email)}</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Departemen: <strong>${escapeHtml(u.division)}</strong></div>
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/70">
+            <button type="button" data-edit-user="${u.id}" class="flex-1 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 font-semibold text-xs text-center">
+              ✏️ Edit User
+            </button>
+            ${!isSelf
+              ? `<button type="button" data-delete-user="${u.id}" class="flex-1 py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 font-semibold text-xs text-center">🗑️ Hapus</button>`
+              : `<span class="text-[11px] text-slate-400 px-2">Akun Aktif</span>`
+            }
+          </div>
+        `;
+        mobileContainer.appendChild(mCard);
+      });
+
+      const bindUserActions = container => {
+        container.querySelectorAll('[data-edit-user]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const uid = btn.getAttribute('data-edit-user');
+            const user = state.members.find(m => m.id === uid);
+            if (!user) return;
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('userNameInput').value = user.name;
+            document.getElementById('userEmailInput').value = user.email;
+            document.getElementById('userDivisionInput').value = user.division;
+            document.getElementById('userRoleInput').value = user.role;
+
+            document.getElementById('userFormBadge').textContent = 'Mode Edit User';
+            document.getElementById('userFormTitle').textContent = `Edit User: ${user.name}`;
+            document.getElementById('btnSubmitUserForm').textContent = 'Simpan Perubahan User';
+            document.getElementById('btnCancelEditUser').classList.remove('hidden');
+            document.getElementById('userNameInput').focus();
+          });
+        });
+
+        container.querySelectorAll('[data-delete-user]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const uid = btn.getAttribute('data-delete-user');
+            if (uid === state.loggedInUserId) {
+              showToast('Tidak dapat menghapus akun yang sedang dipakai login!');
+              return;
+            }
+            const target = state.members.find(m => m.id === uid);
+            if (!target) return;
+            state.members = state.members.filter(m => m.id !== uid);
+            state.tasks = state.tasks.filter(t => t.memberId !== uid);
+            if (state.selectedUser === uid) state.selectedUser = 'ALL';
+            saveState();
+            renderAll();
+            showToast(`User "${target.name}" (${target.email}) telah dihapus.`);
+          });
+        });
+      };
+
+      bindUserActions(tbody);
+      bindUserActions(mobileContainer);
+    }
+
+    function resetUserForm() {
+      document.getElementById('editUserId').value = '';
+      document.getElementById('userNameInput').value = '';
+      document.getElementById('userEmailInput').value = '';
+      document.getElementById('userDivisionInput').value = 'Advertiser Meta';
+      document.getElementById('userRoleInput').value = 'MEMBER';
+      document.getElementById('userFormBadge').textContent = 'Manajemen Akun Google';
+      document.getElementById('userFormTitle').textContent = 'Tambah User Baru';
+      document.getElementById('btnSubmitUserForm').textContent = '+ Tambah User';
+      document.getElementById('btnCancelEditUser').classList.add('hidden');
+    }
+
+    function switchTab(tabId) {
+      if (tabId === 'users' && !isCurrentUserAdmin()) {
+        tabId = 'dashboard';
+      }
+      state.activeTab = tabId;
+      ['dashboard', 'plan', 'update', 'users'].forEach(id => {
+        const sec = document.getElementById('view-' + id);
+        if (sec) sec.classList.toggle('hidden', id !== tabId);
+      });
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const bTab = btn.getAttribute('data-tab');
+        if (bTab === 'users' && !isCurrentUserAdmin()) {
+          btn.classList.add('hidden');
+          return;
+        }
+        const isActive = bTab === tabId;
+        btn.className = isActive
+          ? 'tab-btn flex-1 sm:flex-initial text-center px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap transition flex items-center justify-center gap-1'
+          : 'tab-btn flex-1 sm:flex-initial text-center px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap transition flex items-center justify-center gap-1';
+      });
+      renderAll();
+    }
+
+    function exportToCsv() {
+      const headers = ['Hari & Tanggal', 'Waktu Input', 'Nama', 'Email', 'Departemen', 'Kerjaan Harian', 'Jenis Bukti', 'Status', 'Dikunci?', 'Bukti Link / SS', 'Keterangan'];
+      const rows = getFilteredTasks().map(t => {
+        const m = getMemberById(t.memberId);
+        const proofVal = t.proofType === 'none' ? 'Tanpa Bukti' : t.proofType === 'link' ? (t.proofLink || '') : (t.proofImage ? '1 Foto Screenshot Terlampir' : '');
+        return [
+          formatHariTanggal(t.date),
+          t.inputTime || '',
+          m.name,
+          m.email,
+          t.category,
+          t.title,
+          t.proofType,
+          t.status,
+          t.isLocked ? 'Terkunci' : 'Terbuka',
+          proofVal,
+          t.notes || ''
+        ].map(c => `"${String(c).replace(/"/g, '""')}"`).join(',');
+      });
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+      const link = document.createElement('a');
+      link.setAttribute('href', encodeURI(csvContent));
+      link.setAttribute('download', `kpi-niagakara-mitra-juara-${state.startDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('File CSV PT Niagakara Mitra Juara berhasil diunduh!');
+    }
+
+    function renderAll() {
+      renderLoginGate();
+      renderDepartmentDropdowns();
+      renderGoogleIdentity();
+      renderMemberDropdowns();
+      renderDashboard();
+      renderPlanList();
+      renderSpreadsheetTable();
+      renderAdminUsersTab();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+      });
+
+      // Toggle Collapsible Filter Drawer
+      document.getElementById('btnToggleFilterDrawer').addEventListener('click', () => {
+        state.filterDrawerOpen = !state.filterDrawerOpen;
+        document.getElementById('collapsibleFilterPanel').classList.toggle('hidden', !state.filterDrawerOpen);
+        document.getElementById('filterDrawerArrow').textContent = state.filterDrawerOpen ? '▾' : '▸';
+      });
+
+      // Dismiss (X) & Restore Banner Info
+      document.getElementById('btnDismissBanner').addEventListener('click', () => {
+        state.bannerDismissed = true;
+        renderGoogleIdentity();
+        showToast('Banner informasi disembunyikan');
+      });
+      document.getElementById('btnRestoreBanner').addEventListener('click', () => {
+        state.bannerDismissed = false;
+        renderGoogleIdentity();
+      });
+      document.getElementById('btnQuickLoadSopMini').addEventListener('click', loadAllDepartmentDefaultsForToday);
+      document.getElementById('btnLoadSopInPlan').addEventListener('click', loadAllDepartmentDefaultsForToday);
+
+      // Toggle SOP Reference Accordion in Plan Tab
+      document.getElementById('btnToggleSopAccordion').addEventListener('click', () => {
+        state.sopAccordionOpen = !state.sopAccordionOpen;
+        document.getElementById('planSopReferenceList').classList.toggle('hidden', !state.sopAccordionOpen);
+        document.getElementById('sopAccordionArrow').textContent = state.sopAccordionOpen ? '▴' : '▾';
+      });
+
+      const startInp = document.getElementById('filterDate');
+      const endInp = document.getElementById('filterEndDate');
+      const monthSel = document.getElementById('filterMonth');
+      const yearSel = document.getElementById('filterYear');
+
+      startInp.addEventListener('change', e => {
+        state.startDate = e.target.value;
+        if (state.endDate < state.startDate) {
+          state.endDate = state.startDate;
+          endInp.value = state.startDate;
+        }
+        monthSel.value = 'CUSTOM';
+        renderAll();
+      });
+
+      endInp.addEventListener('change', e => {
+        state.endDate = e.target.value;
+        if (state.startDate > state.endDate) {
+          state.startDate = state.endDate;
+          startInp.value = state.endDate;
+        }
+        monthSel.value = 'CUSTOM';
+        renderAll();
+      });
+
+      function applyMonthYearFilter() {
+        const m = monthSel.value;
+        const y = yearSel.value;
+        if (m === 'CUSTOM') return;
+        const lastDay = new Date(Number(y), Number(m), 0).getDate();
+        state.startDate = `${y}-${m}-01`;
+        state.endDate = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
+        startInp.value = state.startDate;
+        endInp.value = state.endDate;
+        renderAll();
+        showToast(`Filter Kalender: Bulan ${monthSel.options[monthSel.selectedIndex].text} ${y}`);
+      }
+
+      monthSel.addEventListener('change', applyMonthYearFilter);
+      yearSel.addEventListener('change', () => {
+        if (monthSel.value === 'CUSTOM') monthSel.value = '11';
+        applyMonthYearFilter();
+      });
+
+      document.getElementById('btnPresetToday').addEventListener('click', () => {
+        state.startDate = RUNNING_TODAY;
+        state.endDate = RUNNING_TODAY;
+        startInp.value = RUNNING_TODAY;
+        endInp.value = RUNNING_TODAY;
+        monthSel.value = 'CUSTOM';
+        state.statusFilter = 'ALL';
+        document.getElementById('filterStatusSelect').value = 'ALL';
+        renderAll();
+        showToast('Filter dikembalikan ke Hari Berjalan (Rabu, 4 Nov 2026)');
+      });
+
+      document.getElementById('btnPresetFullMonth').addEventListener('click', () => {
+        monthSel.value = '11';
+        yearSel.value = '2026';
+        applyMonthYearFilter();
+      });
+
+      document.getElementById('btnPresetOverdue').addEventListener('click', () => {
+        state.startDate = '2026-11-01';
+        state.endDate = RUNNING_TODAY;
+        startInp.value = state.startDate;
+        endInp.value = state.endDate;
+        state.statusFilter = 'OVERDUE_OR_UNFINISHED';
+        document.getElementById('filterStatusSelect').value = 'OVERDUE_OR_UNFINISHED';
+        switchTab('update');
+        showToast('Menampilkan lacak kerjaan harian yang tertinggal / belum beres');
+      });
+
+      document.getElementById('filterUser').addEventListener('change', e => {
+        state.selectedUser = e.target.value;
+        renderAll();
+      });
+
+      document.getElementById('inputMember').addEventListener('change', () => {
+        const activeMember = getActiveWorkingMember();
+        const dept = activeMember.division === 'Admin' ? 'Advertiser Meta' : activeMember.division;
+        populateDepartmentSopDropdowns(dept);
+        document.getElementById('inputCategory').value = dept;
+      });
+
+      document.getElementById('planDefaultSelect').addEventListener('change', e => {
+        const activeMember = getActiveWorkingMember();
+        const dept = activeMember.division === 'Admin' ? 'Advertiser Meta' : activeMember.division;
+        applySelectedDefaultJob(dept, e.target.value);
+      });
+
+      const planDateInp = document.getElementById('inputPlanDate');
+      planDateInp.addEventListener('change', () => {
+        document.getElementById('planDatePreview').textContent = `Hari: ${formatHariTanggal(planDateInp.value)}`;
+      });
+
+      document.getElementById('btnLoadDeptDefaults').addEventListener('click', loadAllDepartmentDefaultsForToday);
+
+      document.getElementById('formAddPlan').addEventListener('submit', e => {
+        e.preventDefault();
+        const memberId = document.getElementById('inputMember').value;
+        const title = document.getElementById('inputTaskTitle').value.trim();
+        const taskDate = document.getElementById('inputPlanDate').value || RUNNING_TODAY;
+        const proofType = document.getElementById('inputProofType').value;
+        const category = document.getElementById('inputCategory').value;
+        const priority = document.getElementById('inputPriority').value;
+        const targetOutput = document.getElementById('inputTargetOutput').value.trim();
+        if (!title) return;
+
+        const nowTime = getCurrentTimeWib();
+        state.tasks.unshift({
+          id: 'nk_' + Date.now(),
+          date: taskDate,
+          inputTime: nowTime,
+          memberId,
+          category,
+          title,
+          priority,
+          proofType,
+          targetOutput: targetOutput || 'Isi keterangan kerjaan',
+          status: 'In Progress',
+          isLocked: false,
+          proofLink: '',
+          proofImage: '',
+          notes: ''
+        });
+
+        if (taskDate < state.startDate) {
+          state.startDate = taskDate;
+          startInp.value = taskDate;
+        }
+        if (taskDate > state.endDate) {
+          state.endDate = taskDate;
+          endInp.value = taskDate;
+        }
+
+        document.getElementById('inputTaskTitle').value = '';
+        document.getElementById('planDefaultSelect').value = 'CUSTOM';
+        saveState();
+        renderAll();
+        showToast(`Rencana kerjaan ditambahkan (${formatHariTanggal(taskDate)} • ${nowTime})`);
+      });
+
+      document.getElementById('formManageUser').addEventListener('submit', e => {
+        e.preventDefault();
+        if (!isCurrentUserAdmin()) return;
+
+        const editId = document.getElementById('editUserId').value.trim();
+        const name = document.getElementById('userNameInput').value.trim();
+        const email = document.getElementById('userEmailInput').value.trim();
+        const division = document.getElementById('userDivisionInput').value;
+        const role = division === 'Admin' ? 'ADMIN' : document.getElementById('userRoleInput').value;
+
+        if (!name || !email) return;
+
+        const duplicate = state.members.find(m => m.email.toLowerCase() === email.toLowerCase() && m.id !== editId);
+        if (duplicate) {
+          showToast(`Email "${email}" sudah dipakai oleh ${duplicate.name}!`);
+          return;
+        }
+
+        if (editId) {
+          const target = state.members.find(m => m.id === editId);
+          if (target) {
+            target.name = name;
+            target.email = email;
+            target.division = division;
+            target.role = role;
+            saveState();
+            resetUserForm();
+            renderAll();
+            showToast(`Data user "${name}" berhasil diperbarui!`);
+          }
+        } else {
+          const newUser = {
+            id: 'u_' + Date.now(),
+            name,
+            email,
+            division,
+            role
+          };
+          state.members.push(newUser);
+          saveState();
+          resetUserForm();
+          renderAll();
+          showToast(`User baru "${name}" (${email}) berhasil ditambahkan & sudah bisa login!`);
+        }
+      });
+
+      function openNewDeptBox() {
+        document.getElementById('newDeptBox').classList.remove('hidden');
+        document.getElementById('newDeptNameInput').focus();
+      }
+
+      function closeNewDeptBox() {
+        document.getElementById('newDeptBox').classList.add('hidden');
+        document.getElementById('newDeptNameInput').value = '';
+        const sel = document.getElementById('userDivisionInput');
+        if (sel.value === '__ADD_NEW__') {
+          sel.value = state.departments[0] || 'Advertiser Meta';
+        }
+      }
+
+      function saveNewDepartment() {
+        const inp = document.getElementById('newDeptNameInput');
+        const newDept = inp.value.trim();
+        if (!newDept) {
+          showToast('Masukkan nama departemen/jabatan baru terlebih dahulu');
+          return;
+        }
+        const exists = state.departments.some(d => d.toLowerCase() === newDept.toLowerCase());
+        if (!exists) {
+          state.departments.push(newDept);
+          if (!DEPARTMENT_DEFAULT_JOBS[newDept]) {
+            DEPARTMENT_DEFAULT_JOBS[newDept] = [
+              { title: `Monitoring dan laporan harian ${newDept}`, proofType: 'none', noteHint: 'Isi keterangan laporan harian', priority: 'High' },
+              { title: `Eksekusi pekerjaan utama ${newDept}`, proofType: 'screenshot', noteHint: 'Wajib bukti screenshot (1 foto) + keterangan', priority: 'High' }
+            ];
+          }
+          saveState();
+        }
+        renderDepartmentDropdowns(newDept);
+        document.getElementById('userDivisionInput').value = newDept;
+        document.getElementById('newDeptBox').classList.add('hidden');
+        inp.value = '';
+        showToast(`Departemen/Jabatan "${newDept}" berhasil ditambahkan!`);
+      }
+
+      document.getElementById('btnToggleAddDept').addEventListener('click', openNewDeptBox);
+      document.getElementById('btnCancelNewDept').addEventListener('click', closeNewDeptBox);
+      document.getElementById('btnSaveNewDept').addEventListener('click', saveNewDepartment);
+
+      document.getElementById('userDivisionInput').addEventListener('change', e => {
+        if (e.target.value === '__ADD_NEW__') {
+          openNewDeptBox();
+          return;
+        }
+        if (e.target.value === 'Admin') {
+          document.getElementById('userRoleInput').value = 'ADMIN';
+        } else {
+          document.getElementById('userRoleInput').value = 'MEMBER';
+        }
+      });
+
+      document.getElementById('btnClearAllTasksAdmin').addEventListener('click', () => {
+        if (!isCurrentUserAdmin()) return;
+        if (state.selectedUser === 'ALL') {
+          state.tasks = [];
+          saveState();
+          renderAll();
+          showToast('Seluruh catatan kerjaan (termasuk data dummy) berhasil dihapus!');
+        } else {
+          const targetMember = getMemberById(state.selectedUser);
+          state.tasks = state.tasks.filter(t => t.memberId !== state.selectedUser);
+          saveState();
+          renderAll();
+          showToast(`Seluruh catatan kerjaan milik ${targetMember.name} berhasil dihapus!`);
+        }
+      });
+
+      document.getElementById('btnCancelEditUser').addEventListener('click', resetUserForm);
+
+      document.getElementById('searchUserTableInput').addEventListener('input', e => {
+        state.userSearchQuery = e.target.value;
+        renderAdminUsersTab();
+      });
+
+      document.getElementById('hiddenScreenshotInput').addEventListener('change', e => {
+        const file = e.target.files && e.target.files[0];
+        if (!file || !state.pendingUploadTaskId) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const task = state.tasks.find(t => t.id === state.pendingUploadTaskId);
+          if (task && !task.isLocked) {
+            task.proofImage = ev.target.result;
+            saveState();
+            renderAll();
+            showToast('📷 Screenshot bukti (1 foto) berhasil di-upload!');
+          }
+          state.pendingUploadTaskId = null;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('btnCloseScreenshotModal').addEventListener('click', () => {
+        document.getElementById('screenshotPreviewModal').classList.add('hidden');
+      });
+      document.getElementById('btnCloseScreenshotModalBottom').addEventListener('click', () => {
+        document.getElementById('screenshotPreviewModal').classList.add('hidden');
+      });
+
+      document.getElementById('searchTaskInput').addEventListener('input', e => {
+        state.searchQuery = e.target.value;
+        renderSpreadsheetTable();
+      });
+
+      document.getElementById('filterStatusSelect').addEventListener('change', e => {
+        state.statusFilter = e.target.value;
+        renderSpreadsheetTable();
+      });
+
+      document.getElementById('btnQuickAddModal').addEventListener('click', () => {
+        switchTab('plan');
+        document.getElementById('inputTaskTitle').focus();
+      });
+      document.getElementById('btnJumpToUpdate').addEventListener('click', () => switchTab('update'));
+      document.getElementById('btnGoToSpreadsheet').addEventListener('click', () => switchTab('update'));
+      document.getElementById('btnNextToUpdate').addEventListener('click', () => switchTab('update'));
+
+      document.getElementById('btnScopeMine').addEventListener('click', () => {
+        state.spreadsheetScope = 'MINE';
+        renderAll();
+      });
+      document.getElementById('btnScopeAll').addEventListener('click', () => {
+        state.spreadsheetScope = 'ALL';
+        renderAll();
+      });
+
+      document.getElementById('btnResetDummy').addEventListener('click', () => {
+        state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+        state.tasks = buildInitialTasks();
+        state.startDate = RUNNING_TODAY;
+        state.endDate = RUNNING_TODAY;
+        startInp.value = RUNNING_TODAY;
+        endInp.value = RUNNING_TODAY;
+        saveState();
+        renderAll();
+        showToast('Data KPI PT Niagakara Mitra Juara di-reset ke awal');
+      });
+
+      document.getElementById('btnExportCsv').addEventListener('click', exportToCsv);
+
+      document.getElementById('formGoogleGateLogin').addEventListener('submit', e => {
+        e.preventDefault();
+        loginByEmail(document.getElementById('gateEmailInput').value);
+      });
+      document.getElementById('btnLogoutGoogle').addEventListener('click', logoutGoogleAccount);
+
+      // Cloud Sync Modal Handlers
+      const codeArea = document.getElementById('appsScriptCodeArea');
+      if (codeArea) codeArea.value = APPS_SCRIPT_CODE;
+      updateCloudSyncBadgeUI();
+
+      document.getElementById('btnOpenCloudSyncModal').addEventListener('click', () => {
+        updateCloudSyncBadgeUI();
+        document.getElementById('cloudSyncModal').classList.remove('hidden');
+      });
+      document.getElementById('btnCloseCloudModal').addEventListener('click', () => {
+        document.getElementById('cloudSyncModal').classList.add('hidden');
+      });
+      document.getElementById('btnCloseCloudModalBottom').addEventListener('click', () => {
+        document.getElementById('cloudSyncModal').classList.add('hidden');
+      });
+
+      document.getElementById('btnSaveCloudUrl').addEventListener('click', () => {
+        const val = document.getElementById('cloudWebAppUrlInput').value.trim() || DEFAULT_LOCKED_SHEET_URL;
+        cloudWebAppUrl = val;
+        isCloudUrlLocked = true;
+        writePersistentStore('niagakara_cloud_webapp_url', cloudWebAppUrl);
+        writePersistentStore('niagakara_cloud_locked', 'true');
+        updateCloudSyncBadgeUI();
+        pushStateToCloudSheets();
+        showToast('🔒 Koneksi Cloud Google Sheets berhasil dipasang & dikunci permanen di site!');
+      });
+
+      document.getElementById('btnUnlockCloudUrl').addEventListener('click', () => {
+        isCloudUrlLocked = false;
+        writePersistentStore('niagakara_cloud_locked', 'false');
+        updateCloudSyncBadgeUI();
+        document.getElementById('cloudWebAppUrlInput').focus();
+        showToast('🔓 Kunci URL dibuka. Silakan ubah URL lalu klik "Pasang & Kunci di Site".');
+      });
+
+      document.getElementById('btnPullFromCloud').addEventListener('click', () => {
+        pullStateFromCloudSheets(true);
+      });
+
+      document.getElementById('btnCopyAppsScript').addEventListener('click', () => {
+        const area = document.getElementById('appsScriptCodeArea');
+        area.select();
+        try {
+          document.execCommand('copy');
+          showToast('📋 Kode Google Apps Script (Code.gs) berhasil disalin!');
+        } catch (e) {
+          showToast('Silakan salin teks dari kotak kode.');
+        }
+      });
+
+      if (cloudWebAppUrl) {
+        pullStateFromCloudSheets(false);
+      }
+
+      renderAll();
+    });
+  </script>
+</body>
+</html>
