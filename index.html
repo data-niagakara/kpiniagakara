@@ -148,7 +148,7 @@ th{background:#f8fafc;font-size:11px;text-transform:none}
 
   <section id="t-plan" class="hidden">
     <div class="card">
-      <div class="row sp"><h2>Input Rencana Kerjaan</h2><button id="bSop" class="btn o" type="button">Muat semua SOP departemen</button></div>
+      <div class="row sp"><h2>Input Rencana Kerjaan</h2><button id="bSop" class="btn o" type="button">Muat SOP departemen saya</button></div>
       <form id="fAdd">
         <label for="pMember">Anggota</label><select id="pMember" style="width:100%"></select>
         <label for="pSop">Pilih SOP default (opsional)</label><select id="pSop" style="width:100%"></select>
@@ -278,6 +278,7 @@ async function enter(session){
   const list=isAdmin()?staff:[me];
   pm.innerHTML=list.map(u=>`<option value="${u.id}">${esc(u.name)} (${esc(u.division)})</option>`).join('');
   pm.disabled=!isAdmin();
+  $('bSop').textContent=isAdmin()?'Muat SOP semua departemen & anggota':'Muat SOP departemen saya';
   fillSop();
   await loadTasks();
 }
@@ -386,7 +387,7 @@ function card(t){
 function renderList(){
   const f=$('fStatus').value;
   const rows=S.tasks.filter(t=>f==='ALL'||(f==='OD'?(t.status!=='Done'||t.task_date<today()):t.status===f));
-  $('list').innerHTML=rows.map(card).join('')||'<div class="card mut">Belum ada kerjaan di periode ini. Buka tab Input Kerjaan, lalu klik "Muat semua SOP departemen".</div>';
+  $('list').innerHTML=rows.map(card).join('')||'<div class="card mut">Belum ada kerjaan di periode ini. Buka tab Input Kerjaan, lalu klik tombol "Muat SOP".</div>';
 }
 
 /* ---------- EVENTS ---------- */
@@ -447,17 +448,43 @@ $('fAdd').onsubmit=async e=>{
     $('pTitle').value='';$('pSop').value='';toast('Kerjaan ditambahkan');
   }
 };
+
+/* Muat SOP: Admin = semua anggota di semua departemen; Staff = diri sendiri */
 $('bSop').onclick=async()=>{
-  const m=curMember(),jobs=J[m.division]||[],d=$('pDate').value||today();
-  if(!jobs.length){toast('Departemen ini belum punya SOP default',1);return}
-  const {data:ex,error}=await sb.from('tasks').select('title').eq('member_id',m.id).eq('task_date',d);
+  const d=$('pDate').value||today();
+  const targets=isAdmin()?S.users.filter(u=>u.role!=='ADMIN'):[S.me];
+  const withSop=targets.filter(u=>(J[u.division]||[]).length);
+  const skipped=targets.filter(u=>!(J[u.division]||[]).length);
+
+  if(!withSop.length){toast('Belum ada SOP default untuk departemen yang dipilih',1);return}
+
+  if(isAdmin()){
+    const depts=[...new Set(withSop.map(u=>u.division))];
+    if(!confirm('Muat SOP default untuk '+withSop.length+' anggota di '+depts.length+' departemen ('+depts.join(', ')+') pada tanggal '+fmt(d)+'?'))return;
+  }
+
+  // Cek kerjaan yang sudah ada (1 query untuk semua anggota)
+  const {data:ex,error}=await sb.from('tasks').select('member_id,title')
+    .in('member_id',withSop.map(u=>u.id)).eq('task_date',d).limit(5000);
   if(error){toast('Gagal cek data: '+error.message,1);return}
-  const have=new Set((ex||[]).map(x=>x.title));
-  const rows=jobs.filter(j=>!have.has(j[0])).map(j=>mk(m,d,j[0],j[1],j[2],''));
+  const have=new Set((ex||[]).map(x=>x.member_id+'|'+x.title));
+
+  const rows=[];
+  withSop.forEach(u=>{
+    (J[u.division]||[]).forEach(j=>{
+      if(!have.has(u.id+'|'+j[0]))rows.push(mk(u,d,j[0],j[1],j[2],''));
+    });
+  });
+
   if(!rows.length){toast('Semua SOP tanggal itu sudah ada');return}
+
+  // Admin: tampilkan semua anggota supaya hasilnya langsung terlihat
+  if(isAdmin()&&S.uid!=='ALL'){S.uid='ALL';$('fUser').value='ALL'}
+
   if(await addRows(rows,d)){
     document.querySelector('.tabs button[data-tab="upd"]').click();
-    toast(rows.length+' kerjaan SOP ditambahkan untuk '+m.name);
+    toast(rows.length+' kerjaan SOP ditambahkan untuk '+withSop.length+' anggota'
+      +(skipped.length?' ('+skipped.length+' anggota dilewati: departemen belum punya SOP)':''));
   }
 };
 
