@@ -72,6 +72,12 @@ th{background:#f8fafc;font-size:11px;text-transform:none}
 #modal img{max-width:100%;border-radius:8px;display:block;margin:8px 0}
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
 .login .card{max-width:400px;width:100%;text-align:center}
+body.mg{background:linear-gradient(180deg,#ccfbf1 0,#f8fafc 260px) fixed}
+body.mg .top{background:linear-gradient(135deg,#134e4a,#0f766e 60%,#14b8a6)}body.mg .top .mut{color:#99f6e4}
+body.mg .btn{background:linear-gradient(135deg,#0d9488,#14b8a6)}
+body.mg .btn.o{background:#fff}body.mg .btn.r{background:var(--errb)}
+body.mg .top .btn.o{background:rgba(255,255,255,.14)}
+body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
 </style>
 </head>
 <body>
@@ -98,7 +104,7 @@ th{background:#f8fafc;font-size:11px;text-transform:none}
     <button class="btn o" id="bToday" type="button">Hari ini</button>
     <button class="btn o" id="bMonth" type="button">Bulan ini</button>
     <button class="btn o" id="bCsv" type="button">Export CSV</button>
-    <select id="fUser" class="hidden"></select>
+    <select id="fUser" class="hidden"></select><select id="fGrp" class="hidden"><option value="ALL">Semua grup</option><option value="INTI">Karyawan Inti</option><option value="MAGANG">Magang</option></select>
   </div>
 
   <div class="tabs">
@@ -108,7 +114,7 @@ th{background:#f8fafc;font-size:11px;text-transform:none}
     <button data-tab="users" class="hidden">User</button>
   </div>
 
-  <section id="t-dash">
+  <section id="t-dash"><div id="revBox" class="card hidden" style="background:var(--warnb);border-color:#fde68a"><div class="row sp"><span><b id="revN">0</b> kerjaan magang menunggu review admin.</span><button class="btn" id="revGo" type="button">Buka antrian review</button></div></div>
     <div class="g2">
       <div class="card gauge">
         <div class="row sp"><b>Skor KPI Akhir</b><span id="kGrade" class="tag ok">Excellent</span></div>
@@ -167,7 +173,7 @@ th{background:#f8fafc;font-size:11px;text-transform:none}
   <section id="t-upd" class="hidden">
     <div class="card row sp">
       <h2 style="margin:0">Update Status & Bukti</h2>
-      <select id="fStatus"><option value="ALL">Semua status</option><option value="OD">Tertinggal / belum beres</option><option value="Done">Done</option><option value="In Progress">In Progress</option><option value="Pending">Pending</option></select>
+      <select id="fStatus"><option value="ALL">Semua status</option><option value="REVIEW">Menunggu review (Magang)</option><option value="OD">Tertinggal / belum beres</option><option value="Done">Done</option><option value="In Progress">In Progress</option><option value="Pending">Pending</option></select>
     </div>
     <div id="list"></div>
   </section>
@@ -183,7 +189,7 @@ th{background:#f8fafc;font-size:11px;text-transform:none}
         <label for="uDiv">Departemen / jabatan</label><select id="uDiv" style="width:100%"></select>
         <input id="uCustom" class="hidden" placeholder="Tulis nama departemen / jabatan baru" style="width:100%;margin-top:6px" />
         <label for="uRole">Hak akses</label>
-        <select id="uRole" style="width:100%"><option value="MEMBER">Staff / Member (hanya data sendiri)</option><option value="ADMIN">Admin (semua data & kelola user)</option></select>
+        <select id="uRole" style="width:100%"><option value="MEMBER">Staff / Member (hanya data sendiri)</option><option value="ADMIN">Admin (semua data & kelola user)</option></select><label for="uGrp">Grup</label><select id="uGrp" style="width:100%"><option value="INTI">Karyawan Inti</option><option value="MAGANG">Magang</option></select>
         <div class="row" style="margin-top:12px">
           <button class="btn" id="uSubmit" type="submit">+ Tambah user</button>
           <button class="btn o hidden" id="uCancel" type="button">Batal edit</button>
@@ -196,7 +202,7 @@ th{background:#f8fafc;font-size:11px;text-transform:none}
     </div>
     <div class="card" style="overflow-x:auto">
       <div class="row sp"><h2 style="margin:0">Daftar user</h2><input id="uSearch" placeholder="Cari nama / email / departemen" /></div>
-      <table style="margin-top:8px"><thead><tr><th>Nama</th><th>Email</th><th>Departemen</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="uBody"></tbody></table>
+      <table style="margin-top:8px"><thead><tr><th>Nama</th><th>Email</th><th>Departemen</th><th>Grup</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="uBody"></tbody></table>
     </div>
   </section>
 </div>
@@ -234,7 +240,18 @@ const J={
  'Finance':[['Rekonsiliasi mutasi bank & verifikasi pembayaran masuk harian','link','High'],['Verifikasi budget iklan harian Advertiser (Meta, Shopee, TikTok)','none','High'],['Input laporan kas & pengeluaran operasional harian','screenshot','Medium']]
 };
 
-const S={me:null,users:[],tasks:[],from:'',to:'',uid:'ALL'};
+const JMC=[['Menulis refleksi harian: apa yang dipelajari hari ini.','none','Medium'],['Mengerjakan tugas tambahan dari admin.','none','High']];
+const JM={
+ 'CRM':[['Observasi & belajar alur penyimpanan data customer ke CRM.','none','Medium'],['Membantu follow up customer melalui chat.','none','Medium'],['Membantu input pesanan ke Webot.','none','High']],
+ 'Customer Service':[['Belajar menangani lead baru bersama CS senior.','none','Medium'],['Membantu follow up customer melalui chat.','none','Medium'],['Membantu labeling customer.','none','Low']],
+ 'Advertiser Shopee':[['Belajar membaca performa iklan Shopee.','none','Medium'],['Membantu input laporan budget harian.','none','Medium']],
+ 'Advertiser Tiktokshop':[['Belajar membaca performa iklan TikTok Shop.','none','Medium'],['Membantu input laporan budget harian.','none','Medium']],
+ 'Advertiser Meta':[['Belajar membaca performa Meta Ads.','none','Medium'],['Membantu input laporan budget harian.','none','Medium']],
+ 'Finance':[['Belajar rekonsiliasi mutasi bank bersama tim Finance.','none','Medium'],['Membantu input laporan kas harian.','none','Medium']]
+};
+const sopFor=u=>u.grp==='MAGANG'?(JM[u.division]||[]).concat(JMC):(J[u.division]||[]);
+const S={me:null,users:[],tasks:[],from:'',to:'',uid:'ALL',grp:'ALL'};
+const staffList=()=>S.users.filter(u=>u.role!=='ADMIN'&&(S.grp==='ALL'||(u.grp||'INTI')===S.grp));
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const today=()=>ymd(new Date());
@@ -263,31 +280,42 @@ async function enter(session){
   const me=us.find(u=>String(u.email).toLowerCase()===email);
   if(!me){await sb.auth.signOut();showLogin('Akses ditolak: email '+email+' belum didaftarkan Admin.');return}
   await loadDepts();
-  S.me=me;S.users=us;S.from=S.to=today();S.uid=isAdmin()?'ALL':me.id;
+  S.me=me;S.users=us;S.grp='ALL';S.from=S.to=today();S.uid=isAdmin()?'ALL':me.id;
   $('login').classList.add('hidden');$('app').classList.remove('hidden');
-  $('who').textContent=me.name+' · '+(isAdmin()?'Admin':me.division);
+  $('who').textContent=me.name+' · '+(isAdmin()?'Admin':me.division+(me.grp==='MAGANG'?' · Magang':''));
   document.querySelector('.tabs button[data-tab="users"]').classList.toggle('hidden',!isAdmin());
   $('fromD').value=S.from;$('toD').value=S.to;$('pDate').value=today();
-  const staff=us.filter(u=>u.role!=='ADMIN');
-  const fu=$('fUser');
-  if(isAdmin()){
-    fu.classList.remove('hidden');
-    fu.innerHTML='<option value="ALL">Semua anggota ('+staff.length+')</option>'+staff.map(u=>`<option value="${u.id}">${esc(u.name)} — ${esc(u.division)}</option>`).join('');
-  }
-  const pm=$('pMember');
-  const list=isAdmin()?staff:[me];
-  pm.innerHTML=list.map(u=>`<option value="${u.id}">${esc(u.name)} (${esc(u.division)})</option>`).join('');
-  pm.disabled=!isAdmin();
+  if(isAdmin()){$('fUser').classList.remove('hidden');$('fGrp').classList.remove('hidden');$('fGrp').value='ALL'}
+  $('pMember').disabled=!isAdmin();
+  document.body.classList.toggle('mg',!isAdmin()&&me.grp==='MAGANG');
+  rebuildPickers();
   $('bSop').textContent=isAdmin()?'Muat SOP semua departemen & anggota':'Muat SOP departemen saya';
   fillSop();
   await loadTasks();
 }
 
 /* ---------- DATA ---------- */
+function rebuildPickers(){
+  const staff=staffList();
+  if(isAdmin()){
+    if(S.uid!=='ALL'&&!staff.some(u=>u.id===S.uid))S.uid='ALL';
+    $('fUser').innerHTML='<option value="ALL">Semua anggota ('+staff.length+')</option>'+staff.map(u=>`<option value="${u.id}">${esc(u.name)} — ${esc(u.division)}${u.grp==='MAGANG'?' (Magang)':''}</option>`).join('');
+    $('fUser').value=S.uid;
+  }
+  const pv=$('pMember').value,list=isAdmin()?staff:[S.me];
+  $('pMember').innerHTML=list.map(u=>`<option value="${u.id}">${esc(u.name)} (${esc(u.division)}${u.grp==='MAGANG'?', Magang':''})</option>`).join('');
+  if(list.some(u=>u.id===pv))$('pMember').value=pv;
+  fillSop();
+}
 async function loadTasks(){
   let q=sb.from('tasks').select('*').gte('task_date',S.from).lte('task_date',S.to)
     .order('task_date',{ascending:false}).order('created_at',{ascending:false});
   if(S.uid!=='ALL')q=q.eq('member_id',S.uid);
+  else if(isAdmin()&&S.grp!=='ALL'){
+    const ids=staffList().map(u=>u.id);
+    if(!ids.length){S.tasks=[];render();return}
+    q=q.in('member_id',ids);
+  }
   const {data,error}=await q;
   if(error){toast('Gagal memuat kerjaan: '+error.message,1);return}
   S.tasks=data;render();
@@ -312,12 +340,17 @@ async function addRows(rows,d){
 
 /* ---------- KPI ---------- */
 const proofOk=t=>t.proof_type==='none'||(t.proof_type==='link'&&(t.proof_link||'').trim()!=='')||(t.proof_type==='screenshot'&&!!t.proof_image_path);
+const isMg=t=>{const u=S.users.find(x=>x.id===t.member_id);return !!u&&u.grp==='MAGANG'};
+const isPend=t=>t.status==='Done'&&isMg(t)&&t.review_status!=='APPROVED';
 function metrics(list){
-  const m={total:list.length,ok:0,no:0,prog:0,pend:0,over:0,max:0,pts:0};
+  const m={total:list.length,ok:0,no:0,prog:0,pend:0,over:0,max:0,pts:0,rev:0};
   list.forEach(t=>{
     const w=W[t.priority]||2;m.max+=w;
     if(t.status!=='Done'&&t.task_date<today())m.over++;
-    if(t.status==='Done'){if(proofOk(t)){m.ok++;m.pts+=w}else{m.no++;m.pts+=w*.5}}
+    if(t.status==='Done'){
+      if(isPend(t))m.rev++;
+      else if(proofOk(t)){m.ok++;m.pts+=w}else{m.no++;m.pts+=w*.5}
+    }
     else if(t.status==='In Progress')m.prog++;else m.pend++;
   });
   m.kpi=m.max?Math.round(m.pts/m.max*100):0;return m;
@@ -336,15 +369,15 @@ function renderDash(){
   const arc=$('odoArc');arc.setAttribute('stroke-dasharray',m.kpi+' 100');
   arc.setAttribute('stroke',m.kpi>=85?'#10b981':m.kpi>=70?'#4f46e5':'#f43f5e');
   $('kProof').textContent=(done?Math.round(m.ok/done*100):100)+'%';
-  $('kTotal').textContent=m.total;$('kLock').textContent=S.tasks.filter(t=>t.is_locked).length+' sudah dikunci';
-  $('kDone').textContent=done;$('kDoneSub').textContent=pct(done,m.total)+'% selesai · '+m.no+' kurang bukti';
+  $('revN').textContent=m.rev;$('revBox').classList.toggle('hidden',!(isAdmin()&&m.rev>0));$('kTotal').textContent=m.total;$('kLock').textContent=S.tasks.filter(t=>t.is_locked).length+' sudah dikunci';
+  $('kDone').textContent=done;$('kDoneSub').textContent=pct(done,m.total)+'% selesai · '+m.no+' kurang bukti'+(m.rev?' · '+m.rev+' menunggu review':'');
   $('kProg').textContent=m.prog;$('kProgSub').textContent=pct(m.prog,m.total)+'% sedang dikerjakan';
   $('kPend').textContent=m.pend;$('kPendSub').textContent=m.over+' tertinggal dari hari lalu';
-  const members=(isAdmin()?S.users.filter(u=>u.role!=='ADMIN'):[S.me]).filter(u=>S.uid==='ALL'||u.id===S.uid);
+  const members=(isAdmin()?staffList():[S.me]).filter(u=>S.uid==='ALL'||u.id===S.uid);
   const st=members.map(u=>metrics(S.tasks.filter(t=>t.member_id===u.id)));
   $('recap').innerHTML=members.map((u,i)=>{
     const s=st[i],c=s.kpi>=85?'#10b981':s.kpi>=70?'#6366f1':'#f59e0b';
-    return `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.division)}</td><td>${s.total}</td><td>${s.ok}</td><td>${s.no}</td><td>${s.prog+s.pend}</td>
+    return `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.division)}${u.grp==='MAGANG'?' <span class="tag warn">Magang</span>':''}</td><td>${s.total}</td><td>${s.ok}</td><td>${s.no}</td><td>${s.prog+s.pend}</td>
       <td><b>${s.kpi}%</b><div class="bar"><i style="width:${s.kpi}%;background:${c}"></i></div></td></tr>`;
   }).join('')||'<tr><td colspan="7" class="mut">Belum ada data.</td></tr>';
   if(!window.Chart)return;
@@ -354,9 +387,9 @@ function renderDash(){
     {label:'Penyelesaian (%)',data:st.map(s=>pct(s.ok+s.no,s.total)),backgroundColor:'#10b981',borderRadius:10,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10}}},
       scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
-  const cnt=[m.ok,m.no,m.prog,m.pend],has=cnt.some(v=>v>0);
-  pie=new Chart($('cPie'),{type:'doughnut',data:{labels:['Done sah','Done kurang bukti','In Progress','Pending'],datasets:[{
-    data:has?cnt:[1,0,0,0],backgroundColor:has?['#10b981','#f43f5e','#f59e0b','#94a3b8']:['#e2e8f0','#e2e8f0','#e2e8f0','#e2e8f0'],borderWidth:3,borderColor:'#fff'}]},
+  const cnt=[m.ok,m.no,m.rev,m.prog,m.pend],has=cnt.some(v=>v>0);
+  pie=new Chart($('cPie'),{type:'doughnut',data:{labels:['Done sah','Done kurang bukti','Menunggu review','In Progress','Pending'],datasets:[{
+    data:has?cnt:[1,0,0,0,0],backgroundColor:has?['#10b981','#f43f5e','#38bdf8','#f59e0b','#94a3b8']:['#e2e8f0','#e2e8f0','#e2e8f0','#e2e8f0','#e2e8f0'],borderWidth:3,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:10}}}}});
 }
 function card(t){
@@ -374,19 +407,29 @@ function card(t){
       +(edit?`<button class="btn o" data-up="${t.id}" type="button">${has?'Ganti foto':'Upload foto'}</button>`:'')+'</div>';
   }else proof='<span class="tag">Tanpa bukti</span>';
   const canDel=isAdmin()||(mine&&!t.is_locked);
+  const mg=isMg(t),rs=t.review_status||'NONE',pend=isPend(t),appr=mg&&t.status==='Done'&&rs==='APPROVED';
+  let rev='';
+  if(appr)rev='<div><span class="tag ok">Disetujui admin</span></div>';
+  else if(pend)rev='<div><span class="tag warn">Menunggu review admin</span></div>';
+  else if(mg&&rs==='REJECTED')rev='<div><span class="tag err">Ditolak admin, mohon perbaiki</span> <span class="mut">'+esc(t.review_note||'')+'</span></div>';
+  let lockBtn;
+  if(!mine)lockBtn='<span class="mut">Hanya lihat</span>';
+  else if(appr&&!isAdmin())lockBtn='<span class="mut">Sudah disetujui admin, terkunci</span>';
+  else lockBtn=`<button class="btn ${t.is_locked?'o':''}" data-lock="${t.id}" type="button">${t.is_locked?'Buka kunci (edit)':(mg?'Ceklis & ajukan review':'Ceklis & kunci')}</button>`;
+  if(isAdmin()&&pend)lockBtn+=`<div class="row"><button class="btn" data-apr="${t.id}" type="button">✔ Setujui</button><button class="btn r" data-rej="${t.id}" type="button">✖ Tolak</button></div>`;
   return `<div class="task ${t.is_locked?'lock':od?'od':''}">
     <div class="row sp"><div class="row"><span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span><span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}</div>
     ${canDel?`<button class="btn r" data-del="${t.id}" type="button">Hapus</button>`:''}</div>
     <div><b>${esc(t.title)}</b><div class="mut">${esc(t.target_output||'')}</div></div>
-    <select data-st="${t.id}"${dis}><option value="Done"${t.status==='Done'?' selected':''}>Done (beres)</option><option value="In Progress"${t.status==='In Progress'?' selected':''}>In Progress</option><option value="Pending"${t.status==='Pending'?' selected':''}>Pending</option></select>
+    ${rev}<select data-st="${t.id}"${dis}><option value="Done"${t.status==='Done'?' selected':''}>Done (beres)</option><option value="In Progress"${t.status==='In Progress'?' selected':''}>In Progress</option><option value="Pending"${t.status==='Pending'?' selected':''}>Pending</option></select>
     ${proof}
     <input data-nt="${t.id}" value="${esc(t.notes)}" placeholder="Keterangan / catatan"${dis}>
-    ${mine?`<button class="btn ${t.is_locked?'o':''}" data-lock="${t.id}" type="button">${t.is_locked?'Buka kunci (edit)':'Ceklis & kunci'}</button>`:'<span class="mut">Hanya lihat</span>'}
+    ${lockBtn}
   </div>`;
 }
 function renderList(){
   const f=$('fStatus').value;
-  const rows=S.tasks.filter(t=>f==='ALL'||(f==='OD'?(t.status!=='Done'||t.task_date<today()):t.status===f));
+  const rows=S.tasks.filter(t=>f==='ALL'||(f==='REVIEW'?isPend(t):f==='OD'?(t.status!=='Done'||t.task_date<today()):t.status===f));
   $('list').innerHTML=rows.map(card).join('')||'<div class="card mut">Belum ada kerjaan di periode ini. Buka tab Input Kerjaan, lalu klik tombol "Muat SOP".</div>';
 }
 
@@ -401,9 +444,20 @@ $('list').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.up){upId=b.dataset.up;$('fileIn').value='';$('fileIn').click();return}
   if(b.dataset.view){viewProof(b.dataset.view);return}
+  if(b.dataset.apr||b.dataset.rej){
+    const id=b.dataset.apr||b.dataset.rej;if(!isAdmin())return;
+    if(b.dataset.apr){
+      const n=prompt('Catatan untuk magang (boleh kosong):');if(n===null)return;
+      await patch(id,{review_status:'APPROVED',review_note:n.trim(),reviewed_at:new Date().toISOString()});
+    }else{
+      const n=prompt('Alasan penolakan (akan dilihat magang):');if(n===null)return;
+      await patch(id,{review_status:'REJECTED',status:'In Progress',is_locked:false,review_note:n.trim(),reviewed_at:new Date().toISOString()});
+    }
+    return;
+  }
   if(b.dataset.lock){
     const t=S.tasks.find(x=>x.id===b.dataset.lock);if(!t)return;
-    await patch(t.id,t.is_locked?{is_locked:false}:{status:'Done',is_locked:true});
+    await patch(t.id,t.is_locked?{is_locked:false,review_status:'NONE'}:{status:'Done',is_locked:true,review_status:isMg(t)?'PENDING':'NONE'});
   }else if(b.dataset.del){
     if(!confirm('Hapus kerjaan ini?'))return;
     const {data,error}=await sb.from('tasks').delete().eq('id',b.dataset.del).select();
@@ -430,15 +484,17 @@ $('bMonth').onclick=()=>{
   $('fromD').value=S.from;$('toD').value=S.to;loadTasks();
 };
 $('fUser').onchange=e=>{S.uid=e.target.value;loadTasks()};
+$('fGrp').onchange=e=>{S.grp=e.target.value;rebuildPickers();loadTasks()};
+$('revGo').onclick=()=>{$('fStatus').value='REVIEW';document.querySelector('.tabs button[data-tab="upd"]').click();renderList()};
 
 function curMember(){return S.users.find(u=>u.id===$('pMember').value)||S.me}
 function fillSop(){
-  const m=curMember(),jobs=J[m.division]||[];
+  const m=curMember(),jobs=sopFor(m);
   $('pSop').innerHTML='<option value="">Ketik kerjaan sendiri (di luar SOP)</option>'+jobs.map((j,i)=>`<option value="${i}">${esc(j[0].slice(0,70))}</option>`).join('');
 }
 $('pMember').onchange=fillSop;
 $('pSop').onchange=e=>{
-  const j=(J[curMember().division]||[])[e.target.value];if(!j)return;
+  const j=sopFor(curMember())[e.target.value];if(!j)return;
   $('pTitle').value=j[0];$('pProof').value=j[1];$('pPrio').value=j[2];
 };
 $('fAdd').onsubmit=async e=>{
@@ -452,9 +508,9 @@ $('fAdd').onsubmit=async e=>{
 /* Muat SOP: Admin = semua anggota di semua departemen; Staff = diri sendiri */
 $('bSop').onclick=async()=>{
   const d=$('pDate').value||today();
-  const targets=isAdmin()?S.users.filter(u=>u.role!=='ADMIN'):[S.me];
-  const withSop=targets.filter(u=>(J[u.division]||[]).length);
-  const skipped=targets.filter(u=>!(J[u.division]||[]).length);
+  const targets=isAdmin()?staffList():[S.me];
+  const withSop=targets.filter(u=>sopFor(u).length);
+  const skipped=targets.filter(u=>!sopFor(u).length);
 
   if(!withSop.length){toast('Belum ada SOP default untuk departemen yang dipilih',1);return}
 
@@ -471,7 +527,7 @@ $('bSop').onclick=async()=>{
 
   const rows=[];
   withSop.forEach(u=>{
-    (J[u.division]||[]).forEach(j=>{
+    sopFor(u).forEach(j=>{
       if(!have.has(u.id+'|'+j[0]))rows.push(mk(u,d,j[0],j[1],j[2],''));
     });
   });
@@ -542,7 +598,7 @@ function fillDepts(){
   if(S.depts.includes(cur))$('uDiv').value=cur;
 }
 function resetUserForm(){
-  $('uId').value='';$('uName').value='';$('uEmail').value='';
+  $('uId').value='';$('uName').value='';$('uEmail').value='';$('uGrp').value='INTI';
   $('uRole').value='MEMBER';if(S.depts.length)$('uDiv').selectedIndex=0;$('uCustom').value='';$('uCustom').classList.add('hidden');
   $('uTitle').textContent='Tambah User Baru';$('uSubmit').textContent='+ Tambah user';$('uCancel').classList.add('hidden');
 }
@@ -552,24 +608,17 @@ function renderUsers(){
   const rows=S.users.filter(u=>!q||(u.name+' '+u.email+' '+u.division).toLowerCase().includes(q));
   $('uBody').innerHTML=rows.map(u=>`<tr>
     <td><b>${esc(u.name)}</b>${u.id===S.me.id?' <span class="tag ok">Kamu</span>':''}</td>
-    <td>${esc(u.email)}</td><td>${esc(u.division)}</td>
+    <td>${esc(u.email)}</td><td>${esc(u.division)}</td><td><span class="tag ${u.grp==='MAGANG'?'warn':''}">${u.grp==='MAGANG'?'Magang':'Inti'}</span></td>
     <td><span class="tag ${u.role==='ADMIN'?'warn':'ok'}">${u.role==='ADMIN'?'Admin':'Staff'}</span></td>
     <td><div class="row"><button class="btn o" data-uedit="${u.id}" type="button">Edit</button>`
     +(u.id===S.me.id?'':`<button class="btn r" data-udel="${u.id}" type="button">Hapus</button>`)+'</div></td></tr>').join('')
-    ||'<tr><td colspan="5" class="mut">Tidak ada user yang cocok.</td></tr>';
+    ||'<tr><td colspan="6" class="mut">Tidak ada user yang cocok.</td></tr>';
 }
 async function refreshUsers(){
   const {data,error}=await sb.from('users').select('*').order('name');
   if(error){toast('Gagal memuat user: '+error.message,1);return}
   S.users=data;
-  const staff=data.filter(u=>u.role!=='ADMIN');
-  if(S.uid!=='ALL'&&!staff.some(u=>u.id===S.uid))S.uid='ALL';
-  $('fUser').innerHTML='<option value="ALL">Semua anggota ('+staff.length+')</option>'+staff.map(u=>`<option value="${u.id}">${esc(u.name)} — ${esc(u.division)}</option>`).join('');
-  $('fUser').value=S.uid;
-  const pv=$('pMember').value;
-  $('pMember').innerHTML=staff.map(u=>`<option value="${u.id}">${esc(u.name)} (${esc(u.division)})</option>`).join('');
-  if(staff.some(u=>u.id===pv))$('pMember').value=pv;
-  fillSop();renderUsers();
+  rebuildPickers();renderUsers();
   await loadTasks();
 }
 $('uSearch').oninput=renderUsers;
@@ -593,12 +642,13 @@ $('fUserForm').onsubmit=async e=>{
     }
   }
   let role=$('uRole').value;if(division==='Admin')role='ADMIN';
+  let grp=$('uGrp').value;if(role==='ADMIN')grp='INTI';
   if(!name||!email)return;
   if(S.users.some(u=>u.email.toLowerCase()===email&&u.id!==id)){toast('Email sudah dipakai user lain',1);return}
   if(id===S.me.id&&email!==S.me.email.toLowerCase()){toast('Email akunmu sendiri tidak boleh diubah dari sini (nanti kamu terkunci keluar)',1);return}
   if(id===S.me.id&&role!=='ADMIN'){toast('Role akunmu sendiri tidak boleh diturunkan',1);return}
-  const r=id?await sb.from('users').update({name,email,division,role}).eq('id',id).select()
-            :await sb.from('users').insert({name,email,division,role}).select();
+  const r=id?await sb.from('users').update({name,email,division,role,grp}).eq('id',id).select()
+            :await sb.from('users').insert({name,email,division,role,grp}).select();
   if(r.error||!r.data.length){toast('Gagal menyimpan user'+(r.error?': '+r.error.message:''),1);return}
   const wasEdit=!!id;resetUserForm();
   toast(wasEdit?'Data user diperbarui':'User ditambahkan, sudah bisa login');
@@ -609,7 +659,7 @@ $('uBody').addEventListener('click',async e=>{
   if(b.dataset.uedit){
     const u=S.users.find(x=>x.id===b.dataset.uedit);if(!u)return;
     $('uId').value=u.id;$('uName').value=u.name;$('uEmail').value=u.email;
-    $('uDiv').value=u.division;$('uRole').value=u.role;
+    $('uDiv').value=u.division;$('uRole').value=u.role;$('uGrp').value=u.grp||'INTI';
     $('uTitle').textContent='Edit User: '+u.name;$('uSubmit').textContent='Simpan perubahan';
     $('uCancel').classList.remove('hidden');$('uName').focus();
   }else if(b.dataset.udel){
@@ -636,10 +686,10 @@ $('dAdd').onclick=async()=>{
 /* ---------- EXPORT CSV ---------- */
 $('bCsv').onclick=()=>{
   const cell=c=>{let s=String(c==null?'':c);if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
-  const head=['Hari & Tanggal','Waktu Input','Nama','Email','Departemen','Kerjaan','Jenis Bukti','Status','Dikunci?','Link Bukti','Foto Bukti','Keterangan'];
+  const head=['Hari & Tanggal','Waktu Input','Nama','Email','Departemen','Kerjaan','Jenis Bukti','Status','Dikunci?','Link Bukti','Foto Bukti','Keterangan','Grup','Status Review','Catatan Review'];
   const rows=S.tasks.map(t=>{
     const m=S.users.find(u=>u.id===t.member_id)||{name:'',email:''};
-    return [fmt(t.task_date),t.input_time,m.name,m.email,t.category,t.title,t.proof_type,t.status,t.is_locked?'Terkunci':'Terbuka',t.proof_link||'',t.proof_image_path?'Ada':'',t.notes||''];
+    return [fmt(t.task_date),t.input_time,m.name,m.email,t.category,t.title,t.proof_type,t.status,t.is_locked?'Terkunci':'Terbuka',t.proof_link||'',t.proof_image_path?'Ada':'',t.notes||'',m.grp==='MAGANG'?'Magang':'Inti',m.grp==='MAGANG'?(t.review_status||'NONE'):'',t.review_note||''];
   });
   const csv='\ufeff'+[head,...rows].map(r=>r.map(cell).join(',')).join('\r\n');
   const a=document.createElement('a');
