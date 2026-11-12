@@ -292,6 +292,7 @@ async function enter(session){
   $('bSop').textContent=isAdmin()?'Muat SOP semua departemen & anggota':'Muat SOP departemen saya';
   fillSop();
   await loadTasks();
+  checkInput();
 }
 
 /* ---------- DATA ---------- */
@@ -335,7 +336,7 @@ async function addRows(rows,d){
   if(error){toast('Gagal menambah: '+error.message,1);return false}
   if(d<S.from){S.from=d;$('fromD').value=d}
   if(d>S.to){S.to=d;$('toD').value=d}
-  await loadTasks();return true;
+  await loadTasks();checkInput();return true;
 }
 
 /* ---------- KPI ---------- */
@@ -464,7 +465,7 @@ $('list').addEventListener('click',async e=>{
     if(error||!data.length){toast('Gagal menghapus'+(error?': '+error.message:' (tidak punya izin)'),1);return}
     const gone=S.tasks.find(x=>x.id===b.dataset.del);
     if(gone&&gone.proof_image_path)sb.storage.from('proofs').remove([gone.proof_image_path]);
-    S.tasks=S.tasks.filter(x=>x.id!==b.dataset.del);render();toast('Kerjaan dihapus');
+    S.tasks=S.tasks.filter(x=>x.id!==b.dataset.del);render();toast('Kerjaan dihapus');checkInput();
   }
 });
 $('fStatus').onchange=renderList;
@@ -698,6 +699,49 @@ $('bCsv').onclick=()=>{
   document.body.appendChild(a);a.click();a.remove();
   toast('CSV diunduh ('+rows.length+' baris)');
 };
+
+/* ---------- PERINGATAN BELUM INPUT KERJAAN ---------- */
+const JAM_CEK=[9,30];      // batas jam input (WIB)
+const HARI_LIBUR=[0];      // 0=Minggu, 6=Sabtu; hari ini tidak dicek
+document.querySelector('#app .top').insertAdjacentHTML('afterend','<div id="warnBox" class="card hidden" style="background:var(--warnb);border-color:#fde68a"></div>');
+function wib(){
+  const p={};
+  new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false,weekday:'short'})
+    .formatToParts(new Date()).forEach(x=>p[x.type]=x.value);
+  return{date:p.year+'-'+p.month+'-'+p.day,h:(+p.hour)%24,m:+p.minute,wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday)};
+}
+let wDismiss='';
+async function checkInput(){
+  const box=$('warnBox'),hide=()=>box.classList.add('hidden');
+  if(!S.me){hide();return}
+  const n=wib();
+  const late=n.h>JAM_CEK[0]||(n.h===JAM_CEK[0]&&n.m>=JAM_CEK[1]);
+  if(!late||HARI_LIBUR.includes(n.wd)){hide();return}
+  const {data,error}=await sb.from('tasks').select('member_id').eq('task_date',n.date).limit(5000);
+  if(error||!S.me)return;
+  const has=new Set(data.map(x=>x.member_id));
+  const jam=pad(JAM_CEK[0])+'.'+pad(JAM_CEK[1]);
+  if(isAdmin()){
+    const miss=S.users.filter(u=>u.role!=='ADMIN'&&!has.has(u.id));
+    const sig=n.date+'|'+miss.map(u=>u.id).join(',');
+    if(!miss.length||wDismiss===sig){hide();return}
+    box.dataset.sig=sig;
+    box.innerHTML=`<div class="row sp"><b>⏰ ${miss.length} anggota belum input kerjaan hari ini (lewat jam ${jam} WIB)</b><button class="btn o" data-wclose="1" type="button">Tutup</button></div>
+      <div class="row" style="margin-top:8px">${miss.map(u=>`<span class="tag ${u.grp==='MAGANG'?'warn':''}">${esc(u.name)} · ${esc(u.division)}${u.grp==='MAGANG'?' · Magang':''}</span>`).join('')}</div>`;
+  }else{
+    if(has.has(S.me.id)){hide();return}
+    box.innerHTML=`<div class="row sp"><div><b>⚠️ Pengingat untukmu</b><div class="mut">Sudah lewat jam ${jam} WIB dan kamu belum input kerjaan hari ini. Yuk segera input supaya KPI harianmu tercatat.</div></div>
+      <button class="btn" data-wgo="1" type="button">Input kerjaan sekarang</button></div>`;
+  }
+  box.classList.remove('hidden');
+}
+$('warnBox').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.wclose){wDismiss=$('warnBox').dataset.sig||'';$('warnBox').classList.add('hidden')}
+  if(b.dataset.wgo){$('pDate').value=today();document.querySelector('.tabs button[data-tab="plan"]').click()}
+});
+setInterval(checkInput,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkInput()});
 
 /* ---------- START ---------- */
 (async()=>{
