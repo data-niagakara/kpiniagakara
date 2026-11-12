@@ -104,7 +104,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <button class="btn o" id="bToday" type="button">Hari ini</button>
     <button class="btn o" id="bMonth" type="button">Bulan ini</button>
     <button class="btn o" id="bCsv" type="button">Export CSV</button>
-    <select id="fUser" class="hidden"></select><select id="fGrp" class="hidden"><option value="ALL">Semua grup</option><option value="INTI">Karyawan Inti</option><option value="MAGANG">Magang</option></select>
+    <select id="fUser" class="hidden"></select><select id="fGrp" class="hidden"><option value="ALL">Semua grup</option><option value="INTI">Internal</option><option value="MAGANG">Magang</option></select>
   </div>
 
   <div class="tabs">
@@ -189,7 +189,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
         <label for="uDiv">Departemen / jabatan</label><select id="uDiv" style="width:100%"></select>
         <input id="uCustom" class="hidden" placeholder="Tulis nama departemen / jabatan baru" style="width:100%;margin-top:6px" />
         <label for="uRole">Hak akses</label>
-        <select id="uRole" style="width:100%"><option value="MEMBER">Staff / Member (hanya data sendiri)</option><option value="ADMIN">Admin (semua data & kelola user)</option></select><label for="uGrp">Grup</label><select id="uGrp" style="width:100%"><option value="INTI">Karyawan Inti</option><option value="MAGANG">Magang</option></select>
+        <select id="uRole" style="width:100%"><option value="MEMBER">Staff / Member (hanya data sendiri)</option><option value="ADMIN">Admin (semua data & kelola user)</option></select><label for="uGrp">Grup</label><select id="uGrp" style="width:100%"><option value="INTI">Internal</option><option value="MAGANG">Magang</option></select>
         <div class="row" style="margin-top:12px">
           <button class="btn" id="uSubmit" type="submit">+ Tambah user</button>
           <button class="btn o hidden" id="uCancel" type="button">Batal edit</button>
@@ -416,7 +416,7 @@ function card(t){
   let lockBtn;
   if(!mine)lockBtn='<span class="mut">Hanya lihat</span>';
   else if(appr&&!isAdmin())lockBtn='<span class="mut">Sudah disetujui admin, terkunci</span>';
-  else lockBtn=`<button class="btn ${t.is_locked?'o':''}" data-lock="${t.id}" type="button">${t.is_locked?'Buka kunci (edit)':(mg?'Ceklis & ajukan review':'Ceklis & kunci')}</button>`;
+  else lockBtn=`<button class="btn ${t.is_locked?'o':''}" data-lock="${t.id}" type="button">${t.is_locked?'Buka kunci (edit)':'Submit'}</button>`;
   if(isAdmin()&&pend)lockBtn+=`<div class="row"><button class="btn" data-apr="${t.id}" type="button">✔ Setujui</button><button class="btn r" data-rej="${t.id}" type="button">✖ Tolak</button></div>`;
   return `<div class="task ${t.is_locked?'lock':od?'od':''}">
     <div class="row sp"><div class="row"><span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span><span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}</div>
@@ -609,7 +609,7 @@ function renderUsers(){
   const rows=S.users.filter(u=>!q||(u.name+' '+u.email+' '+u.division).toLowerCase().includes(q));
   $('uBody').innerHTML=rows.map(u=>`<tr>
     <td><b>${esc(u.name)}</b>${u.id===S.me.id?' <span class="tag ok">Kamu</span>':''}</td>
-    <td>${esc(u.email)}</td><td>${esc(u.division)}</td><td><span class="tag ${u.grp==='MAGANG'?'warn':''}">${u.grp==='MAGANG'?'Magang':'Inti'}</span></td>
+    <td>${esc(u.email)}</td><td>${esc(u.division)}</td><td><span class="tag ${u.grp==='MAGANG'?'warn':''}">${u.grp==='MAGANG'?'Magang':'Internal'}</span></td>
     <td><span class="tag ${u.role==='ADMIN'?'warn':'ok'}">${u.role==='ADMIN'?'Admin':'Staff'}</span></td>
     <td><div class="row"><button class="btn o" data-uedit="${u.id}" type="button">Edit</button>`
     +(u.id===S.me.id?'':`<button class="btn r" data-udel="${u.id}" type="button">Hapus</button>`)+'</div></td></tr>').join('')
@@ -690,7 +690,7 @@ $('bCsv').onclick=()=>{
   const head=['Hari & Tanggal','Waktu Input','Nama','Email','Departemen','Kerjaan','Jenis Bukti','Status','Dikunci?','Link Bukti','Foto Bukti','Keterangan','Grup','Status Review','Catatan Review'];
   const rows=S.tasks.map(t=>{
     const m=S.users.find(u=>u.id===t.member_id)||{name:'',email:''};
-    return [fmt(t.task_date),t.input_time,m.name,m.email,t.category,t.title,t.proof_type,t.status,t.is_locked?'Terkunci':'Terbuka',t.proof_link||'',t.proof_image_path?'Ada':'',t.notes||'',m.grp==='MAGANG'?'Magang':'Inti',m.grp==='MAGANG'?(t.review_status||'NONE'):'',t.review_note||''];
+    return [fmt(t.task_date),t.input_time,m.name,m.email,t.category,t.title,t.proof_type,t.status,t.is_locked?'Terkunci':'Terbuka',t.proof_link||'',t.proof_image_path?'Ada':'',t.notes||'',m.grp==='MAGANG'?'Magang':'Internal',m.grp==='MAGANG'?(t.review_status||'NONE'):'',t.review_note||''];
   });
   const csv='\ufeff'+[head,...rows].map(r=>r.map(cell).join(',')).join('\r\n');
   const a=document.createElement('a');
