@@ -8,6 +8,7 @@
 <title>KPI Daily Work — Niagakara</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--brand:#4f46e5;--ok:#047857;--okb:#ecfdf5;--err:#be123c;--errb:#fff1f2;--warn:#b45309;--warnb:#fffbeb}
 *{box-sizing:border-box}
@@ -70,6 +71,15 @@ th{background:#f8fafc;font-size:11px;text-transform:none}
 #modal{position:fixed;inset:0;background:rgba(15,23,42,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:8}
 #modal .box{background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:14px}
 #modal img{max-width:100%;border-radius:8px;display:block;margin:8px 0}
+.wdet{margin-top:10px;animation:wdrop .18s ease-out}
+@keyframes wdrop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.chev{display:inline-block;transition:transform .2s;margin-left:4px;font-size:11px}
+.chev.up{transform:rotate(180deg)}
+#delModal{position:fixed;inset:0;background:rgba(15,23,42,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+#delModal .box{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:18px;display:grid;gap:12px}
+#delModal .ico{font-size:34px;line-height:1}
+#delModal .alert{background:var(--warnb);border:1px solid #fde68a;border-radius:10px;padding:10px;font-size:13px;color:#78350f}
+#delModal .btn.d{background:linear-gradient(135deg,#e11d48,#be123c);color:#fff;border:0}
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
 .login .card{max-width:400px;width:100%;text-align:center}
 body.mg{background:linear-gradient(180deg,#ccfbf1 0,#f8fafc 260px) fixed}
@@ -164,7 +174,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
           <div><label for="pProof">Syarat bukti</label><select id="pProof"><option value="none">Tanpa bukti</option><option value="screenshot">Screenshot (1 foto)</option><option value="link">Link URL</option></select></div>
           <div><label for="pPrio">Prioritas</label><select id="pPrio"><option value="High">High (3 poin)</option><option value="Medium" selected>Medium (2 poin)</option><option value="Low">Low (1 poin)</option></select></div>
         </div>
-        <label for="pHint">Panduan keterangan</label><input id="pHint" style="width:100%" />
+        <label for="pHint">Keterangan</label><input id="pHint" style="width:100%" />
         <div style="margin-top:12px"><button class="btn" type="submit">+ Tambah ke daftar kerjaan</button></div>
       </form>
     </div>
@@ -212,6 +222,29 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <div class="row sp"><b id="mTitle"></b><button id="mClose" class="btn o" type="button">Tutup</button></div>
     <img id="mImg" alt="Bukti screenshot" />
     <div id="mNote" class="mut"></div>
+  </div>
+</div>
+<div id="delModal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+  <div class="box">
+    <div id="delStep1">
+      <div class="ico">⚠️</div>
+      <b id="delTitle" style="font-size:17px;display:block;margin:6px 0"></b>
+      <div class="alert">Menghapus user akan <b>menghapus permanen</b> semua kerjaan dan foto buktinya, serta mencabut akses login. Data tidak bisa dikembalikan. <b>Download data user ini terlebih dahulu</b> sebagai cadangan.</div>
+      <div class="mut" id="delDlStat" style="margin:8px 0 0">Data yang diunduh (ZIP): profil user, seluruh riwayat kerjaan (CSV), dan semua foto bukti.</div>
+      <div class="row sp" style="margin-top:12px">
+        <button class="btn o" id="delCancel1" type="button">Batal</button>
+        <div class="row"><button class="btn o" id="delDl" type="button">⬇ Download data + foto</button><button class="btn" id="delNext" type="button">Next →</button></div>
+      </div>
+    </div>
+    <div id="delStep2" class="hidden">
+      <div class="ico">🗑️</div>
+      <b style="font-size:17px;display:block;margin:6px 0">Yakin ingin menghapus user ini?</b>
+      <div class="alert" id="delConfirmTxt"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:12px">
+        <button class="btn o" id="delNo" type="button">Tidak</button>
+        <button class="btn d" id="delYes" type="button">Ya, hapus</button>
+      </div>
+    </div>
   </div>
 </div>
 <input type="file" id="fileIn" accept="image/*" class="hidden" />
@@ -666,7 +699,7 @@ $('uBody').addEventListener('click',async e=>{
   }else if(b.dataset.udel){
     const id=b.dataset.udel,u=S.users.find(x=>x.id===id);
     if(!u||id===S.me.id)return;
-    if(!confirm('Hapus '+u.name+'? Semua kerjaan dan foto buktinya ikut terhapus.'))return;
+    if(!(await confirmDeleteUser(u)))return;
     const {data,error}=await sb.from('users').delete().eq('id',id).select();
     if(error||!data.length){toast('Gagal menghapus user'+(error?': '+error.message:' (tidak punya izin)'),1);return}
     const {data:files}=await sb.storage.from('proofs').list(id,{limit:1000});
@@ -683,6 +716,79 @@ $('dAdd').onclick=async()=>{
   S.depts.push(n);$('dName').value='';fillDepts();$('uDiv').value=n;
   toast('Departemen "'+n+'" ditambahkan');
 };
+
+
+/* ---------- KONFIRMASI HAPUS USER (download -> next -> ya/tidak) ---------- */
+async function downloadUserData(u,onProg){
+  const {data,error}=await sb.from('tasks').select('*').eq('member_id',u.id).order('task_date',{ascending:true}).limit(10000);
+  if(error)throw error;
+  const cell=c=>{let v=String(c==null?'':c);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
+  const base=p=>String(p).split('/').pop();
+  const head=['Hari & Tanggal','Waktu Input','Nama','Email','Departemen','Kerjaan','Jenis Bukti','Status','Dikunci?','Link Bukti','Foto Bukti','Keterangan','Grup','Status Review','Catatan Review'];
+  const mkCsv=(photoCol)=>{
+    const rows=data.map(t=>[fmt(t.task_date),t.input_time,u.name,u.email,t.category,t.title,t.proof_type,t.status,t.is_locked?'Terkunci':'Terbuka',t.proof_link||'',t.proof_image_path?photoCol(t):'',t.notes||'',u.grp==='MAGANG'?'Magang':'Internal',u.grp==='MAGANG'?(t.review_status||'NONE'):'',t.review_note||'']);
+    const info=[['Profil User'],['Nama',u.name],['Email',u.email],['Departemen',u.division],['Role',u.role],['Grup',u.grp==='MAGANG'?'Magang':'Internal'],['Total kerjaan',data.length],[]];
+    return '\ufeff'+[...info,head,...rows].map(r=>r.map(cell).join(',')).join('\r\n');
+  };
+  const save=(blob,ext)=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='data-user-'+u.name.replace(/[^\w\-]+/g,'_')+'-'+today()+'.'+ext;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  };
+  // Fallback: library ZIP gagal dimuat -> CSV saja
+  if(typeof JSZip==='undefined'){
+    save(new Blob([mkCsv(t=>'Ada (tidak ikut terunduh)')],{type:'text/csv;charset=utf-8'}),'csv');
+    return{tasks:data.length,photos:0,failed:0,zip:false};
+  }
+  // Semua file di folder user (sama dengan yang akan dihapus) + path yang tercatat di tasks
+  const paths=new Set(data.map(t=>t.proof_image_path).filter(Boolean));
+  const {data:files}=await sb.storage.from('proofs').list(u.id,{limit:1000});
+  (files||[]).forEach(f=>{if(f.name&&f.id!==null)paths.add(u.id+'/'+f.name)});
+  const list=[...paths],zip=new JSZip(),folder=zip.folder('foto-bukti'),failed=[];
+  let ok=0,i=0;
+  for(const path of list){
+    i++;onProg&&onProg(i,list.length);
+    try{
+      const {data:blob,error:e}=await sb.storage.from('proofs').download(path);
+      if(e||!blob)throw e||new Error('kosong');
+      folder.file(base(path),blob);ok++;
+    }catch(err){failed.push(path)}
+  }
+  zip.file('data-kerjaan.csv',mkCsv(t=>failed.includes(t.proof_image_path)?'GAGAL diunduh: '+base(t.proof_image_path):'foto-bukti/'+base(t.proof_image_path)));
+  if(failed.length)zip.file('foto-gagal.txt','Foto berikut gagal diunduh:\r\n'+failed.join('\r\n'));
+  onProg&&onProg(null,null);
+  const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
+  save(blob,'zip');
+  return{tasks:data.length,photos:ok,failed:failed.length,zip:true};
+}
+function confirmDeleteUser(u){
+  return new Promise(resolve=>{
+    const m=$('delModal'),s1=$('delStep1'),s2=$('delStep2');
+    $('delTitle').textContent='Hapus user: '+u.name+'?';
+    $('delConfirmTxt').textContent='Semua data milik '+u.name+' akan hilang permanen dan tidak bisa dikembalikan.';
+    $('delDlStat').textContent='Data yang diunduh (ZIP): profil user, seluruh riwayat kerjaan (CSV), dan semua foto bukti.';
+    s1.classList.remove('hidden');s2.classList.add('hidden');m.classList.remove('hidden');
+    const done=v=>{m.classList.add('hidden');$('delCancel1').onclick=$('delNext').onclick=$('delDl').onclick=$('delNo').onclick=$('delYes').onclick=null;resolve(v)};
+    $('delCancel1').onclick=()=>done(false);
+    $('delNo').onclick=()=>done(false);
+    $('delYes').onclick=()=>done(true);
+    $('delNext').onclick=()=>{s1.classList.add('hidden');s2.classList.remove('hidden')};
+    $('delDl').onclick=async()=>{
+      const b=$('delDl');b.disabled=true;b.textContent='Mengunduh...';
+      try{
+        const r=await downloadUserData(u,(i,n)=>{if(i){$('delDlStat').textContent='Mengunduh foto '+i+'/'+n+'...';}else $('delDlStat').textContent='Menyusun file ZIP...'});
+        $('delDlStat').textContent=r.zip
+          ?'✓ Berhasil diunduh: '+r.tasks+' kerjaan, '+r.photos+' foto'+(r.failed?' ('+r.failed+' foto gagal, lihat foto-gagal.txt di ZIP)':'')+'. Klik Next untuk melanjutkan.'
+          :'⚠ Library ZIP gagal dimuat, hanya CSV ('+r.tasks+' kerjaan) yang terunduh. Foto TIDAK ikut. Cek koneksi lalu coba lagi.';
+        b.textContent='⬇ Download lagi';
+      }
+      catch(err){$('delDlStat').textContent='Gagal mengunduh data: '+(err.message||err);b.textContent='⬇ Download data + foto'}
+      b.disabled=false;
+    };
+  });
+}
 
 /* ---------- EXPORT CSV ---------- */
 $('bCsv').onclick=()=>{
@@ -710,7 +816,7 @@ function wib(){
     .formatToParts(new Date()).forEach(x=>p[x.type]=x.value);
   return{date:p.year+'-'+p.month+'-'+p.day,h:(+p.hour)%24,m:+p.minute,wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday)};
 }
-let wDismiss='';
+let wDismiss='',wOpen=false;
 async function checkInput(){
   const box=$('warnBox'),hide=()=>box.classList.add('hidden');
   if(!S.me){hide();return}
@@ -726,8 +832,8 @@ async function checkInput(){
     const sig=n.date+'|'+miss.map(u=>u.id).join(',');
     if(!miss.length||wDismiss===sig){hide();return}
     box.dataset.sig=sig;
-    box.innerHTML=`<div class="row sp"><b>⏰ ${miss.length} anggota belum input kerjaan hari ini (lewat jam ${jam} WIB)</b><button class="btn o" data-wclose="1" type="button">Tutup</button></div>
-      <div class="row" style="margin-top:8px">${miss.map(u=>`<span class="tag ${u.grp==='MAGANG'?'warn':''}">${esc(u.name)} · ${esc(u.division)}${u.grp==='MAGANG'?' · Magang':''}</span>`).join('')}</div>`;
+    box.innerHTML=`<div class="row sp"><b>⏰ ${miss.length} anggota belum input kerjaan hari ini (lewat jam ${jam} WIB)</b><div class="row"><button class="btn o" data-wtoggle="1" type="button" aria-expanded="${wOpen}">See details <span class="chev${wOpen?' up':''}">▼</span></button><button class="btn o" data-wclose="1" type="button">Tutup</button></div></div>
+      <div class="row wdet${wOpen?'':' hidden'}" id="wDet">${miss.map(u=>`<span class="tag ${u.grp==='MAGANG'?'warn':''}">${esc(u.name)} · ${esc(u.division)}${u.grp==='MAGANG'?' · Magang':''}</span>`).join('')}</div>`;
   }else{
     if(has.has(S.me.id)){hide();return}
     box.innerHTML=`<div class="row sp"><div><b>⚠️ Pengingat untukmu</b><div class="mut">Sudah lewat jam ${jam} WIB dan kamu belum input kerjaan hari ini. Yuk segera input supaya KPI harianmu tercatat.</div></div>
@@ -737,6 +843,10 @@ async function checkInput(){
 }
 $('warnBox').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.wtoggle){
+    wOpen=!wOpen;$('wDet').classList.toggle('hidden',!wOpen);
+    b.setAttribute('aria-expanded',wOpen);b.querySelector('.chev').classList.toggle('up',wOpen);return;
+  }
   if(b.dataset.wclose){wDismiss=$('warnBox').dataset.sig||'';$('warnBox').classList.add('hidden')}
   if(b.dataset.wgo){$('pDate').value=today();document.querySelector('.tabs button[data-tab="plan"]').click()}
 });
