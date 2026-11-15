@@ -88,6 +88,13 @@ body.mg .btn{background:linear-gradient(135deg,#0d9488,#14b8a6)}
 body.mg .btn.o{background:#fff}body.mg .btn.r{background:var(--errb)}
 body.mg .top .btn.o{background:rgba(255,255,255,.14)}
 body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.task.picked{outline:2px solid var(--brand);outline-offset:-2px}
+.pkg{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.pkc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 12px;text-align:left;cursor:pointer;display:grid;gap:4px;box-shadow:0 1px 2px rgba(15,23,42,.04);font:inherit;color:var(--ink)}
+.pkc:hover{border-color:var(--brand);box-shadow:0 4px 12px rgba(79,70,229,.15)}
+.pkl .row{padding:9px 0;border-bottom:1px solid var(--line)}.pkl .row:last-child{border-bottom:0}
+.pkl a{color:var(--brand);font-weight:600;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -121,6 +128,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <button data-tab="dash" class="on">Dashboard & KPI</button>
     <button data-tab="plan">Input Kerjaan</button>
     <button data-tab="upd">Update Status & Bukti</button>
+    <button data-tab="pk">Product Knowledge</button>
     <button data-tab="users" class="hidden">User</button>
   </div>
 
@@ -184,8 +192,21 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <div class="card row sp">
       <h2 style="margin:0">Update Status & Bukti</h2>
       <select id="fStatus"><option value="ALL">Semua status</option><option value="REVIEW">Menunggu review (Magang)</option><option value="OD">Tertinggal / belum beres</option><option value="Done">Done</option><option value="In Progress">In Progress</option><option value="Pending">Pending</option></select>
+      <div id="selBar" class="row hidden">
+        <button class="btn o" id="bSel" type="button">☑ Mode pilih</button>
+        <span id="selTools" class="row hidden">
+          <button class="btn o" id="bSelAll" type="button">Pilih semua</button>
+          <button class="btn o" id="bSelNone" type="button">Kosongkan</button>
+          <button class="btn r" id="bDelSel" type="button" disabled>🗑 Hapus terpilih (0)</button>
+        </span>
+      </div>
     </div>
     <div id="list"></div>
+  </section>
+
+  <section id="t-pk" class="hidden">
+    <div class="card"><h2 style="margin:0">Product Knowledge</h2><div class="mut">Pilih produk untuk melihat materi dan aset.</div></div>
+    <div id="pkBox"></div>
   </section>
 
   <section id="t-users" class="hidden">
@@ -320,6 +341,7 @@ async function enter(session){
   $('fromD').value=S.from;$('toD').value=S.to;$('pDate').value=today();
   if(isAdmin()){$('fUser').classList.remove('hidden');$('fGrp').classList.remove('hidden');$('fGrp').value='ALL'}
   $('pMember').disabled=!isAdmin();
+  $('selBar').classList.toggle('hidden',!isAdmin());
   document.body.classList.toggle('mg',!isAdmin()&&me.grp==='MAGANG');
   rebuildPickers();
   $('bSop').textContent=isAdmin()?'Muat SOP semua departemen & anggota':'Muat SOP departemen saya';
@@ -441,6 +463,8 @@ function card(t){
       +(edit?`<button class="btn o" data-up="${t.id}" type="button">${has?'Ganti foto':'Upload foto'}</button>`:'')+'</div>';
   }else proof='<span class="tag">Tanpa bukti</span>';
   const canDel=isAdmin()||(mine&&!t.is_locked);
+  const selOn=S.selMode&&isAdmin(),picked=selOn&&S.sel.has(t.id);
+  const chk=selOn?`<input type="checkbox" data-sel="${t.id}" aria-label="Pilih kerjaan"${picked?' checked':''} style="width:20px;height:20px">`:'';
   const mg=isMg(t),rs=t.review_status||'NONE',pend=isPend(t),appr=mg&&t.status==='Done'&&rs==='APPROVED';
   let rev='';
   if(appr)rev='<div><span class="tag ok">Disetujui admin</span></div>';
@@ -451,8 +475,8 @@ function card(t){
   else if(appr&&!isAdmin())lockBtn='<span class="mut">Sudah disetujui admin, terkunci</span>';
   else lockBtn=`<button class="btn ${t.is_locked?'o':''}" data-lock="${t.id}" type="button">${t.is_locked?'Buka kunci (edit)':'Submit'}</button>`;
   if(isAdmin()&&pend)lockBtn+=`<div class="row"><button class="btn" data-apr="${t.id}" type="button">✔ Setujui</button><button class="btn r" data-rej="${t.id}" type="button">✖ Tolak</button></div>`;
-  return `<div class="task ${t.is_locked?'lock':od?'od':''}">
-    <div class="row sp"><div class="row"><span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span><span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}</div>
+  return `<div class="task ${t.is_locked?'lock':od?'od':''}${picked?' picked':''}">
+    <div class="row sp"><div class="row">${chk}<span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span><span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}</div>
     ${canDel?`<button class="btn r" data-del="${t.id}" type="button">Hapus</button>`:''}</div>
     <div><b>${esc(t.title)}</b><div class="mut">${esc(t.target_output||'')}</div></div>
     ${rev}<select data-st="${t.id}"${dis}><option value="Done"${t.status==='Done'?' selected':''}>Done (beres)</option><option value="In Progress"${t.status==='In Progress'?' selected':''}>In Progress</option><option value="Pending"${t.status==='Pending'?' selected':''}>Pending</option></select>
@@ -464,13 +488,85 @@ function card(t){
 function renderList(){
   const f=$('fStatus').value;
   const rows=S.tasks.filter(t=>f==='ALL'||(f==='REVIEW'?isPend(t):f==='OD'?(t.status!=='Done'||t.task_date<today()):t.status===f));
+  S.vis=rows.map(t=>t.id);
+  S.sel.forEach(id=>{if(!S.tasks.some(t=>t.id===id))S.sel.delete(id)});
+  updSel();
   $('list').innerHTML=rows.map(card).join('')||'<div class="card mut">Belum ada kerjaan di periode ini. Buka tab Input Kerjaan, lalu klik tombol "Muat SOP".</div>';
 }
+
+/* ---------- PILIH & HAPUS MASSAL (Admin) ---------- */
+S.sel=new Set();S.selMode=false;S.vis=[];S.pk=null;
+function updSel(){
+  const n=S.sel.size,b=$('bDelSel');
+  b.textContent='🗑 Hapus terpilih ('+n+')';b.disabled=!n;
+  $('bSel').textContent=S.selMode?'✖ Keluar mode pilih':'☑ Mode pilih';
+  $('selTools').classList.toggle('hidden',!S.selMode);
+}
+function toggleSel(id,on,el){on?S.sel.add(id):S.sel.delete(id);if(el)el.classList.toggle('picked',on);updSel()}
+$('bSel').onclick=()=>{if(!isAdmin())return;S.selMode=!S.selMode;if(!S.selMode)S.sel.clear();renderList()};
+$('bSelAll').onclick=()=>{if(!isAdmin())return;S.vis.forEach(id=>S.sel.add(id));renderList()};
+$('bSelNone').onclick=()=>{S.sel.clear();renderList()};
+$('bDelSel').onclick=async()=>{
+  if(!isAdmin()||!S.sel.size)return;
+  const items=S.tasks.filter(t=>S.sel.has(t.id));
+  if(!items.length)return;
+  const orang=new Set(items.map(t=>t.member_id)).size;
+  if(!confirm('Yakin ingin menghapus '+items.length+' kerjaan dari '+orang+' anggota?\n\nKerjaan beserta foto buktinya akan dihapus permanen dan tidak bisa dikembalikan.'))return;
+  $('bDelSel').disabled=true;
+  const ids=items.map(t=>t.id),gone=new Set();let err='';
+  for(let i=0;i<ids.length;i+=100){
+    const {data,error}=await sb.from('tasks').delete().in('id',ids.slice(i,i+100)).select('id');
+    if(error){err=error.message;break}
+    (data||[]).forEach(x=>gone.add(x.id));
+  }
+  const paths=items.filter(t=>gone.has(t.id)&&t.proof_image_path).map(t=>t.proof_image_path);
+  if(paths.length)sb.storage.from('proofs').remove(paths);
+  S.tasks=S.tasks.filter(t=>!gone.has(t.id));gone.forEach(id=>S.sel.delete(id));
+  render();checkInput();
+  if(err)toast('Berhenti di tengah jalan ('+gone.size+' terhapus): '+err,1);
+  else if(gone.size<ids.length)toast(gone.size+' dari '+ids.length+' terhapus (sisanya tidak punya izin)',1);
+  else toast(gone.size+' kerjaan dihapus');
+};
+
+/* ---------- PRODUCT KNOWLEDGE ---------- */
+const PK=[
+  {n:'You & Milk',links:[
+    ['Brandbook','https://drive.google.com/drive/folders/1_ESEJuIYAPLSAjOJ3BtZSq3UBgYsHXsq'],
+    ['Product Knowledge','https://docs.google.com/document/d/1eymfgWihxP8oN7WNNqG2ZOSH3F9cR1e9ZAgz5s3iA94/edit?tab=t.0'],
+    ['Surat Informasi','https://drive.google.com/drive/folders/12vOfOFF4WDVdugjwPlNvuo95xIHPGlVt'],
+    ['Aset Mitra','https://drive.google.com/drive/folders/1vPVIBnnCvikVLUmVZAz7iKF3bEB-F9_u?usp=sharing'],
+    ['You & Milk Goat Star','https://drive.google.com/drive/folders/1v05-cLCT3Xb7xqE5VxdvOY53boHTF62c?usp=sharing'],
+    ['Pabrik You & Milk','https://drive.google.com/drive/folders/1pyQ7L6PwOX9XqdtdBrxrRt9nYwYaCBMk?usp=sharing'],
+    ['Endorse You & Milk','https://drive.google.com/drive/folders/1pM42A8DrG6RFQtMDXl8Kud5RH0cJGD_r?usp=drive_link'],
+    ['BA Raditya Dika You & Milk','https://drive.google.com/drive/folders/1pzWPmjirUfbQm2dmMRgz-N3md1tvk5Tq?usp=sharing'],
+    ['You & Milk Box Raditya Dika','https://drive.google.com/drive/folders/1xrpaKCkh9TJcpNON3f2DoA1zHwn6ff1O?usp=sharing'],
+    ['You & Milk Coklat Aset Mitra','https://drive.google.com/drive/folders/1yxPUB2Nmuz__dejBPwzZC-Mzebbfviir?usp=sharing'],
+    ['You & Milk Coklat Box','https://drive.google.com/drive/folders/12dH3UXAwy2MHZZJfVe3w5g-pt0SUSmb3?usp=sharing'],
+    ['Produk Knowledge You & Milk','https://docs.google.com/presentation/d/1DLsG6xV5ys-o2wzCcPnVgl2uobbZCWJclA-BO-mgsCY/edit?slide=id.g3b3e80d8351_0_72#slide=id.g3b3e80d8351_0_72'],
+    ['Info Produk You & Milk Coklat','https://drive.google.com/file/d/1zuJUPRabVsEjft7m6qD5cuPFyX8PqeFL/view']
+  ]},
+  {n:'Vitameal'},{n:'Vitameal Less Sugar'},{n:'Madu Eyebost'},{n:'Eyebost Pro'},{n:'Eyebost Nutrisight'},{n:'Waji'}
+];
+function renderPk(){
+  const box=$('pkBox'),p=S.pk==null?null:PK[S.pk];
+  if(!p){
+    box.innerHTML='<div class="pkg">'+PK.map((x,i)=>`<button class="pkc" data-pk="${i}" type="button"><b>${esc(x.n)}</b><span class="mut">${x.links?x.links.length+' tautan':'Menunggu dimuat'}</span></button>`).join('')+'</div>';
+    return;
+  }
+  box.innerHTML=`<div class="card"><div class="row sp"><h2 style="margin:0">${esc(p.n)}</h2><button class="btn o" data-pkback="1" type="button">← Kembali</button></div></div>`
+    +(p.links?'<div class="card pkl">'+p.links.map(l=>`<div class="row sp"><span>${esc(l[0])}</span><a href="${esc(l[1])}" target="_blank" rel="noopener noreferrer">Klik di sini</a></div>`).join('')+'</div>':'<div class="card mut">Menunggu dimuat.</div>');
+}
+$('t-pk').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.pk!==undefined){S.pk=+b.dataset.pk;renderPk()}
+  else if(b.dataset.pkback){S.pk=null;renderPk()}
+});
 
 /* ---------- EVENTS ---------- */
 $('list').addEventListener('change',e=>{
   const el=e.target;
-  if(el.dataset.st)patch(el.dataset.st,{status:el.value});
+  if(el.dataset.sel)toggleSel(el.dataset.sel,el.checked,el.closest('.task'));
+  else if(el.dataset.st)patch(el.dataset.st,{status:el.value});
   else if(el.dataset.lnk)patch(el.dataset.lnk,{proof_link:el.value.trim()});
   else if(el.dataset.nt)patch(el.dataset.nt,{notes:el.value});
 });
@@ -505,7 +601,8 @@ $('fStatus').onchange=renderList;
 
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
-  ['dash','plan','upd','users'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
+  ['dash','plan','upd','pk','users'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
+  if(b.dataset.tab==='pk')renderPk();
   if(b.dataset.tab==='users')renderUsers();
   if(b.dataset.tab==='dash')renderDash();
 });
