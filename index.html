@@ -134,6 +134,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
   </div>
 
   <section id="t-dash"><div id="revBox" class="card hidden" style="background:var(--warnb);border-color:#fde68a"><div class="row sp"><span><b id="revN">0</b> kerjaan magang menunggu review admin.</span><button class="btn" id="revGo" type="button">Buka antrian review</button></div></div>
+    <div id="carryBanner" class="card hidden" style="background:var(--warnb);border-color:#fde68a"><div class="row sp"><span>⏳ <b id="carryBn">0</b> kerjaan belum beres dari hari sebelumnya.</span><button class="btn" id="carryGo" type="button">Lihat</button></div></div>
     <div class="g2">
       <div class="card gauge">
         <div class="row sp"><b>Skor KPI Akhir</b><span id="kGrade" class="tag ok">Excellent</span></div>
@@ -201,6 +202,12 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
           <button class="btn r" id="bDelSel" type="button" disabled>🗑 Hapus terpilih (0)</button>
         </span>
       </div>
+    </div>
+    <div id="carryBox" class="card hidden" style="background:var(--warnb);border-color:#fde68a">
+      <div class="row sp"><h2 style="margin:0">⏳ Belum beres dari hari sebelumnya (<span id="carryN">0</span>)</h2>
+        <div class="row"><button class="btn o hidden" id="carryTog" type="button"></button><button class="btn o" id="carryCol" type="button">Ciutkan</button></div></div>
+      <div class="mut" style="margin:4px 0 0">Kerjaan lama yang masih In Progress/Pending, menunggu review, atau ditolak. KPI tetap dihitung di tanggal input aslinya.</div>
+      <div id="carryList" style="margin-top:10px"></div>
     </div>
     <div id="list"></div>
   </section>
@@ -364,23 +371,37 @@ function rebuildPickers(){
   if(list.some(u=>u.id===pv))$('pMember').value=pv;
   fillSop();
 }
-async function loadTasks(){
-  let q=sb.from('tasks').select('*').gte('task_date',S.from).lte('task_date',S.to)
-    .order('task_date',{ascending:false}).order('created_at',{ascending:false});
-  if(S.uid!=='ALL')q=q.eq('member_id',S.uid);
-  else if(isAdmin()&&S.grp!=='ALL'){
+S.carry=[];S.carryKeep=new Set();S.carryHide=new Set();S.hideFor=null;S.showHidden=false;S.carryOpen=true;
+function scopeQ(q){
+  if(S.uid!=='ALL')return q.eq('member_id',S.uid);
+  if(isAdmin()&&S.grp!=='ALL'){
     const ids=staffList().map(u=>u.id);
-    if(!ids.length){S.tasks=[];render();return}
-    q=q.in('member_id',ids);
+    if(!ids.length)return null;
+    return q.in('member_id',ids);
   }
+  return q;
+}
+async function loadTasks(){
+  const q=scopeQ(sb.from('tasks').select('*').gte('task_date',S.from).lte('task_date',S.to)
+    .order('task_date',{ascending:false}).order('created_at',{ascending:false}));
+  if(!q){S.tasks=[];S.carry=[];S.carryKeep=new Set();render();return}
   const {data,error}=await q;
   if(error){toast('Gagal memuat kerjaan: '+error.message,1);return}
-  S.tasks=data;render();
+  /* carry-over: kerjaan sebelum rentang tanggal yang belum beres / menunggu review / ditolak */
+  const cq=scopeQ(sb.from('tasks').select('*').lt('task_date',S.from)
+    .or('status.neq.Done,review_status.in.(PENDING,REJECTED)')
+    .order('task_date',{ascending:true}).limit(1000));
+  const {data:cd,error:ce}=await cq;
+  if(ce)toast('Gagal memuat kerjaan tertinggal: '+ce.message,1);
+  S.tasks=data;S.carry=ce?[]:(cd||[]);S.carryKeep=new Set();render();
 }
+const findT=id=>S.tasks.find(t=>t.id===id)||S.carry.find(t=>t.id===id);
 async function patch(id,f){
   const {data,error}=await sb.from('tasks').update(f).eq('id',id).select();
   if(error||!data.length){toast('Gagal menyimpan'+(error?': '+error.message:' (tidak punya izin)'),1);await loadTasks();return}
-  const i=S.tasks.findIndex(t=>t.id===id);if(i>-1)S.tasks[i]=data[0];
+  const i=S.tasks.findIndex(t=>t.id===id);
+  if(i>-1)S.tasks[i]=data[0];
+  else{const j=S.carry.findIndex(t=>t.id===id);if(j>-1){S.carry[j]=data[0];S.carryKeep.add(id)}}
   render();toast('Tersimpan');
 }
 function mk(m,d,title,proof,prio,hint){
@@ -414,7 +435,7 @@ function metrics(list){
 }
 
 /* ---------- RENDER ---------- */
-function render(){renderDash();renderList()}
+function render(){renderDash();renderList();renderCarry()}
 const pct=(a,b)=>b?Math.round(a/b*100):0;
 let bar=null,pie=null;
 function renderDash(){
@@ -449,11 +470,13 @@ function renderDash(){
     data:has?cnt:[1,0,0,0,0],backgroundColor:has?['#10b981','#f43f5e','#38bdf8','#f59e0b','#94a3b8']:['#e2e8f0','#e2e8f0','#e2e8f0','#e2e8f0','#e2e8f0'],borderWidth:3,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:10}}}}});
 }
-function card(t){
+function card(t,carry){
   const m=S.users.find(u=>u.id===t.member_id)||{name:'?'};
   const mine=isAdmin()||t.member_id===S.me.id;
   const edit=mine&&!t.is_locked, dis=edit?'':' disabled';
   const od=t.status!=='Done'&&t.task_date<today();
+  const ago=Math.round((new Date(today()+'T00:00:00Z')-new Date(t.task_date+'T00:00:00Z'))/864e5);
+  const hidden=carry&&S.carryHide.has(t.id);
   let proof;
   if(t.proof_type==='link'){
     const l=(t.proof_link||'').trim(), href=/^https?:\/\//i.test(l)?l:'https://'+l;
@@ -464,7 +487,7 @@ function card(t){
       +(edit?`<button class="btn o" data-up="${t.id}" type="button">${has?'Ganti foto':'Upload foto'}</button>`:'')+'</div>';
   }else proof='<span class="tag">Tanpa bukti</span>';
   const canDel=isAdmin()||(mine&&!t.is_locked);
-  const selOn=S.selMode&&isAdmin(),picked=selOn&&S.sel.has(t.id);
+  const selOn=S.selMode&&isAdmin()&&!carry,picked=selOn&&S.sel.has(t.id);
   const chk=selOn?`<input type="checkbox" data-sel="${t.id}" aria-label="Pilih kerjaan"${picked?' checked':''} style="width:20px;height:20px">`:'';
   const mg=isMg(t),rs=t.review_status||'NONE',pend=isPend(t),appr=mg&&t.status==='Done'&&rs==='APPROVED';
   let rev='';
@@ -477,8 +500,8 @@ function card(t){
   else lockBtn=`<button class="btn ${t.is_locked?'o':''}" data-lock="${t.id}" type="button">${t.is_locked?'Buka kunci (edit)':'Submit'}</button>`;
   if(isAdmin()&&pend)lockBtn+=`<div class="row"><button class="btn" data-apr="${t.id}" type="button">✔ Setujui</button><button class="btn r" data-rej="${t.id}" type="button">✖ Tolak</button></div>`;
   return `<div class="task ${t.is_locked?'lock':od?'od':''}${picked?' picked':''}">
-    <div class="row sp"><div class="row">${chk}<span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span><span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}</div>
-    ${canDel?`<button class="btn r" data-del="${t.id}" type="button">Hapus</button>`:''}</div>
+    <div class="row sp"><div class="row">${chk}<span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span><span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}${carry?'<span class="tag warn">⏳ '+ago+' hari lalu</span>':''}</div>
+    <div class="row">${carry?(hidden?`<button class="btn o" data-unhide="${t.id}" type="button">Tampilkan lagi</button>`:`<button class="btn o" data-hide="${t.id}" type="button">Sembunyikan</button>`):''}${canDel?`<button class="btn r" data-del="${t.id}" type="button">Hapus</button>`:''}</div></div>
     <div><b>${esc(t.title)}</b><div class="mut">${esc(t.target_output||'')}</div></div>
     ${rev}<select data-st="${t.id}"${dis}><option value="Done"${t.status==='Done'?' selected':''}>Done (beres)</option><option value="In Progress"${t.status==='In Progress'?' selected':''}>In Progress</option><option value="Pending"${t.status==='Pending'?' selected':''}>Pending</option></select>
     ${proof}
@@ -496,7 +519,34 @@ function renderList(){
   S.vis=rows.map(t=>t.id);
   S.sel.forEach(id=>{if(!S.tasks.some(t=>t.id===id))S.sel.delete(id)});
   updSel();
-  $('list').innerHTML=rows.map(card).join('')||'<div class="card mut">Belum ada kerjaan di periode ini. Buka tab Input Kerjaan, lalu klik tombol "Muat SOP".</div>';
+  $('list').innerHTML=rows.map(t=>card(t)).join('')||'<div class="card mut">Belum ada kerjaan di periode ini. Buka tab Input Kerjaan, lalu klik tombol "Muat SOP".</div>';
+  autoSizeAll();
+}
+
+/* ---------- CARRY-OVER (belum beres dari hari sebelumnya) ---------- */
+const carryOk=t=>t.status!=='Done'||isPend(t);
+const hideKey=()=>'kpi_carry_hide_'+(S.me?S.me.id:'');
+function loadHide(){try{return new Set(JSON.parse(localStorage.getItem(hideKey())||'[]'))}catch(e){return new Set()}}
+function saveHide(){try{localStorage.setItem(hideKey(),JSON.stringify([...S.carryHide]))}catch(e){}}
+function renderCarry(){
+  const box=$('carryBox'),ban=$('carryBanner');
+  const uid=S.me?S.me.id:null;
+  if(S.hideFor!==uid){S.carryHide=loadHide();S.hideFor=uid}
+  const base=S.carry.filter(t=>carryOk(t)||S.carryKeep.has(t.id));
+  const open=base.filter(t=>carryOk(t)&&!S.carryHide.has(t.id));
+  const hid=base.filter(t=>S.carryHide.has(t.id));
+  ban.classList.toggle('hidden',!open.length);$('carryBn').textContent=open.length;
+  if(!base.length){box.classList.add('hidden');return}
+  box.classList.remove('hidden');
+  $('carryN').textContent=open.length;
+  const tog=$('carryTog');tog.classList.toggle('hidden',!hid.length);
+  tog.textContent=S.showHidden?'Sembunyikan yang ditutup':'Tampilkan yang disembunyikan ('+hid.length+')';
+  $('carryCol').textContent=S.carryOpen?'Ciutkan':'Buka';
+  $('carryList').classList.toggle('hidden',!S.carryOpen);
+  const f=$('fStatus').value;
+  const rows=base.filter(t=>S.showHidden||!S.carryHide.has(t.id))
+    .filter(t=>f==='ALL'||(f==='REVIEW'?isPend(t):f==='OD'?true:t.status===f));
+  $('carryList').innerHTML=rows.map(t=>card(t,true)).join('')||'<div class="mut">Tidak ada kerjaan yang cocok dengan filter/penyembunyian saat ini.</div>';
   autoSizeAll();
 }
 
@@ -608,15 +658,18 @@ $('t-pk').addEventListener('click',e=>{
 });
 
 /* ---------- EVENTS ---------- */
-$('list').addEventListener('change',e=>{
+const onListChange=e=>{
   const el=e.target;
   if(el.dataset.sel)toggleSel(el.dataset.sel,el.checked,el.closest('.task'));
   else if(el.dataset.st)patch(el.dataset.st,{status:el.value});
   else if(el.dataset.lnk)patch(el.dataset.lnk,{proof_link:el.value.trim()});
   else if(el.dataset.nt)patch(el.dataset.nt,{notes:el.value});
-});
-$('list').addEventListener('click',async e=>{
+};
+$('list').addEventListener('change',onListChange);$('carryList').addEventListener('change',onListChange);
+const onListClick=async e=>{
   const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.hide){S.carryHide.add(b.dataset.hide);saveHide();renderCarry();return}
+  if(b.dataset.unhide){S.carryHide.delete(b.dataset.unhide);saveHide();renderCarry();return}
   if(b.dataset.up){upId=b.dataset.up;$('fileIn').value='';$('fileIn').click();return}
   if(b.dataset.view){viewProof(b.dataset.view);return}
   if(b.dataset.apr||b.dataset.rej){
@@ -631,18 +684,22 @@ $('list').addEventListener('click',async e=>{
     return;
   }
   if(b.dataset.lock){
-    const t=S.tasks.find(x=>x.id===b.dataset.lock);if(!t)return;
+    const t=findT(b.dataset.lock);if(!t)return;
     await patch(t.id,t.is_locked?{is_locked:false,review_status:'NONE'}:{status:'Done',is_locked:true,review_status:isMg(t)?'PENDING':'NONE'});
   }else if(b.dataset.del){
     if(!confirm('Hapus kerjaan ini?'))return;
     const {data,error}=await sb.from('tasks').delete().eq('id',b.dataset.del).select();
     if(error||!data.length){toast('Gagal menghapus'+(error?': '+error.message:' (tidak punya izin)'),1);return}
-    const gone=S.tasks.find(x=>x.id===b.dataset.del);
+    const gone=findT(b.dataset.del);
     if(gone&&gone.proof_image_path)sb.storage.from('proofs').remove([gone.proof_image_path]);
-    S.tasks=S.tasks.filter(x=>x.id!==b.dataset.del);render();toast('Kerjaan dihapus');checkInput();
+    S.tasks=S.tasks.filter(x=>x.id!==b.dataset.del);S.carry=S.carry.filter(x=>x.id!==b.dataset.del);render();toast('Kerjaan dihapus');checkInput();
   }
-});
-$('fStatus').onchange=renderList;
+};
+$('list').addEventListener('click',onListClick);$('carryList').addEventListener('click',onListClick);
+$('fStatus').onchange=()=>{renderList();renderCarry()};
+$('carryTog').onclick=()=>{S.showHidden=!S.showHidden;renderCarry()};
+$('carryCol').onclick=()=>{S.carryOpen=!S.carryOpen;renderCarry()};
+$('carryGo').onclick=()=>{$('fStatus').value='ALL';document.querySelector('.tabs button[data-tab="upd"]').click();renderList();renderCarry()};
 
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
@@ -739,7 +796,7 @@ function compress(file){
   });
 }
 async function uploadProof(id,file){
-  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const t=findT(id);if(!t)return;
   try{
     toast('Mengunggah foto...');
     const blob=await compress(file);
@@ -750,7 +807,7 @@ async function uploadProof(id,file){
   }catch(err){toast('Gagal upload foto: '+err.message,1)}
 }
 async function viewProof(id){
-  const t=S.tasks.find(x=>x.id===id);if(!t||!t.proof_image_path)return;
+  const t=findT(id);if(!t||!t.proof_image_path)return;
   const {data,error}=await sb.storage.from('proofs').createSignedUrl(t.proof_image_path,300);
   if(error){toast('Gagal membuka foto: '+error.message,1);return}
   $('mImg').src=data.signedUrl;
