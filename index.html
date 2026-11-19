@@ -135,6 +135,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
   </div>
 
   <section id="t-dash"><div id="revBox" class="card hidden" style="background:var(--warnb);border-color:#fde68a"><div class="row sp"><span><b id="revN">0</b> kerjaan magang menunggu review admin.</span><button class="btn" id="revGo" type="button">Buka antrian review</button></div></div>
+    <div id="reqNotify" class="card hidden" style="background:#eef2ff;border-color:#c7d2fe"><div class="row sp"><div id="reqNotifyL"></div><button class="btn" id="reqNotifyGo" type="button">Buka Request</button></div></div>
     <div id="carryBanner" class="card hidden" style="background:var(--warnb);border-color:#fde68a"><div class="row sp"><span>⏳ <b id="carryBn">0</b> kerjaan belum beres dari hari sebelumnya.</span><button class="btn" id="carryGo" type="button">Lihat</button></div></div>
     <div class="g2">
       <div class="card gauge">
@@ -421,6 +422,7 @@ async function patch(id,f){
   if(i>-1)S.tasks[i]=data[0];
   else{const j=S.carry.findIndex(t=>t.id===id);if(j>-1){S.carry[j]=data[0];S.carryKeep.add(id)}}
   render();toast('Tersimpan');
+  await syncReqFromTask(data[0],f);
 }
 function mk(m,d,title,proof,prio,hint){
   return{id:'nk_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),task_date:d,input_time:nowWib(),
@@ -497,6 +499,8 @@ function card(t,carry){
   const od=t.status!=='Done'&&t.task_date<today();
   const ago=Math.round((new Date(today()+'T00:00:00Z')-new Date(t.task_date+'T00:00:00Z'))/864e5);
   const hidden=carry&&S.carryHide.has(t.id);
+  const rq=[...S.req.values()].find(r=>r.task_id===t.id);
+  const rqTag=rq?'<span class="tag warn">📨 Request dari '+esc(rq.from_name)+'</span>':'';
   let proof;
   if(t.proof_type==='link'){
     const l=(t.proof_link||'').trim(), href=/^https?:\/\//i.test(l)?l:'https://'+l;
@@ -520,7 +524,7 @@ function card(t,carry){
   else lockBtn=`<button class="btn ${t.is_locked?'o':''}" data-lock="${t.id}" type="button">${t.is_locked?'Buka kunci (edit)':'Submit'}</button>`;
   if(isAdmin()&&pend)lockBtn+=`<div class="row"><button class="btn" data-apr="${t.id}" type="button">✔ Setujui</button><button class="btn r" data-rej="${t.id}" type="button">✖ Tolak</button></div>`;
   return `<div class="task ${t.is_locked?'lock':od?'od':''}${picked?' picked':''}">
-    <div class="row sp"><div class="row">${chk}<span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span><span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}${carry?'<span class="tag warn">⏳ '+ago+' hari lalu</span>':''}</div>
+    <div class="row sp"><div class="row">${chk}<span class="tag ok">${esc(m.name)}</span><span class="tag">${esc(t.category)}</span>${rqTag}<span class="mut">${esc(fmt(t.task_date))} · input ${esc(t.input_time)}</span>${od?'<span class="tag err">Tertinggal</span>':''}${carry?'<span class="tag warn">⏳ '+ago+' hari lalu</span>':''}</div>
     <div class="row">${carry?(hidden?`<button class="btn o" data-unhide="${t.id}" type="button">Tampilkan lagi</button>`:`<button class="btn o" data-hide="${t.id}" type="button">Sembunyikan</button>`):''}${canDel?`<button class="btn r" data-del="${t.id}" type="button">Hapus</button>`:''}</div></div>
     <div><b>${esc(t.title)}</b><div class="mut">${esc(t.target_output||'')}</div></div>
     ${rev}<select data-st="${t.id}"${dis}><option value="Done"${t.status==='Done'?' selected':''}>Done (beres)</option><option value="In Progress"${t.status==='In Progress'?' selected':''}>In Progress</option><option value="Pending"${t.status==='Pending'?' selected':''}>Pending</option></select>
@@ -646,7 +650,15 @@ function renderReq(){
   $('rqMine').innerHTML=mine.map(r=>rcard(r,'mine')).join('')||empty('Belum ada request yang kamu ambil.');
   $('rqOut').innerHTML=out.map(r=>rcard(r,'out')).join('')||empty('Kamu belum membuat request.');
   $('rqAll').innerHTML=all.map(r=>rcard(r,'all')).join('')||empty('Belum ada request.');
-  const n=admin?0:inc.length+out.filter(r=>r.status==='REVIEW').length;
+  const rev=mine.filter(r=>r.status==='ASSIGNED'&&r.rev_note);
+  const waitConf=out.filter(r=>r.status==='REVIEW');
+  const lines=[];
+  if(!admin&&inc.length)lines.push('📢 <b>'+inc.length+'</b> request baru masuk untuk departemen '+esc(S.me.division));
+  if(!admin&&waitConf.length)lines.push('✅ <b>'+waitConf.length+'</b> request kamu sudah selesai dikerjakan, menunggu konfirmasimu');
+  if(!admin&&rev.length)lines.push('🔁 <b>'+rev.length+'</b> request diminta revisi oleh pembuatnya');
+  $('reqNotifyL').innerHTML=lines.map(l=>'<div>'+l+'</div>').join('');
+  $('reqNotify').classList.toggle('hidden',!lines.length);
+  const n=admin?0:inc.length+waitConf.length+rev.length;
   const bd=$('reqBadge');bd.textContent=n;bd.classList.toggle('hidden',!n);
   autoSizeAll();
 }
@@ -671,11 +683,29 @@ async function rqAssign(id){
   await rqUpd(id,{task_id:task.id},{assigned_to:meId()});
   toast('Request diambil dan masuk ke kerjaanmu');
 }
+async function syncReqFromTask(t,f){
+  if(!S.me||!S.req||!S.req.size)return;
+  const r=[...S.req.values()].find(x=>x.task_id===t.id);if(!r)return;
+  if(!(isAdmin()||r.assigned_to===meId()))return;
+  const toDone=(f.status==='Done'||f.is_locked===true)&&t.status==='Done';
+  const back=(f.status&&f.status!=='Done')||f.is_locked===false;
+  if(toDone&&r.status==='ASSIGNED'){
+    const g=await rqUpd(r.id,{status:'REVIEW',done_at:new Date().toISOString()},{status:'ASSIGNED'});
+    if(g)toast('Request ikut ditandai selesai, menunggu konfirmasi pembuat');
+  }else if(back&&r.status==='REVIEW'){
+    const g=await rqUpd(r.id,{status:'ASSIGNED',done_at:null},{status:'REVIEW'});
+    if(g)toast('Request kembali ke status dikerjakan');
+  }
+}
 async function rqDone(id){
   const r=S.req.get(id);if(!r)return;
-  const got=await rqUpd(id,{status:'REVIEW',done_at:new Date().toISOString()},{status:'ASSIGNED',assigned_to:meId()});
-  if(!got)return;
-  if(r.task_id){await patch(r.task_id,{status:'Done',is_locked:true,review_status:isMg({member_id:S.me.id})?'PENDING':'NONE'});await loadTasks()}
+  if(r.task_id)await patch(r.task_id,{status:'Done',is_locked:true,review_status:isMg({member_id:S.me.id})?'PENDING':'NONE'});
+  const cur=S.req.get(id);
+  if(cur&&cur.status==='ASSIGNED'){
+    const g=await rqUpd(id,{status:'REVIEW',done_at:new Date().toISOString()},{status:'ASSIGNED',assigned_to:meId()});
+    if(!g)return;
+  }
+  await loadTasks();
   toast('Ditandai selesai, menunggu konfirmasi pembuat request');
 }
 async function rqRelease(id){
@@ -689,6 +719,7 @@ async function rqRelease(id){
   }
   toast('Request dilepas');
 }
+$('reqNotifyGo').onclick=()=>document.querySelector('.tabs button[data-tab="req"]').click();
 $('rqSend').onclick=async()=>{
   const to_dept=$('rqDept').value,title=$('rqTitle').value.trim();
   if(!to_dept){toast('Pilih departemen tujuan',1);return}
