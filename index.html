@@ -129,6 +129,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <button data-tab="dash" class="on">Dashboard & KPI</button>
     <button data-tab="plan">Input Kerjaan</button>
     <button data-tab="upd">Update Status & Bukti</button>
+    <button data-tab="req">Request <span id="reqBadge" class="tag err hidden"></span></button>
     <button data-tab="pk">Product Knowledge</button>
     <button data-tab="users" class="hidden">User</button>
   </div>
@@ -212,6 +213,22 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <div id="list"></div>
   </section>
 
+  <section id="t-req" class="hidden">
+    <div id="reqErr" class="card hidden" style="background:var(--errb);border-color:#fecdd3"></div>
+    <div class="card">
+      <h2>Buat request ke departemen lain</h2>
+      <div class="mut">Request akan muncul sebagai pengumuman di departemen tujuan. Siapa pun di sana bisa mengambilnya lewat "Assign to me".</div>
+      <label for="rqDept">Departemen tujuan</label><select id="rqDept"></select>
+      <label for="rqTitle">Judul request</label><input id="rqTitle" maxlength="120" placeholder="Contoh: Edit video reels produk baru" style="width:100%">
+      <label for="rqDesc">Detail / brief (opsional)</label><textarea id="rqDesc" class="auto" rows="2" placeholder="Link referensi, ukuran, catatan..."></textarea>
+      <label for="rqDue">Deadline (opsional)</label><input type="date" id="rqDue">
+      <div style="margin-top:10px"><button class="btn" id="rqSend" type="button">Kirim request</button></div>
+    </div>
+    <div id="rqInCard" class="card"><h2>📢 Request masuk untuk departemen <span id="rqMyDept"></span> (<span id="rqInN">0</span>)</h2><div id="rqIn"></div></div>
+    <div id="rqMineCard" class="card"><h2>🛠 Sedang saya kerjakan (<span id="rqMineN">0</span>)</h2><div id="rqMine"></div></div>
+    <div id="rqOutCard" class="card"><h2>📤 Request yang saya buat (<span id="rqOutN">0</span>)</h2><div id="rqOut"></div></div>
+    <div id="rqAllCard" class="card hidden"><h2>Semua request (<span id="rqAllN">0</span>)</h2><div id="rqAll"></div></div>
+  </section>
   <section id="t-pk" class="hidden">
     <div class="card"><h2 style="margin:0">Product Knowledge</h2><div class="mut">Pilih produk untuk melihat materi dan aset.</div></div>
     <div id="pkBox"></div>
@@ -333,7 +350,7 @@ $('btnLogin').onclick=async()=>{
   const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
   if(error)showLogin('Gagal mulai login: '+error.message);
 };
-$('btnLogout').onclick=async()=>{await sb.auth.signOut();S.me=null;showLogin()};
+$('btnLogout').onclick=async()=>{if(S.rch){try{sb.removeChannel(S.rch)}catch(e){}S.rch=null}S.req=new Map();await sb.auth.signOut();S.me=null;showLogin()};
 
 async function enter(session){
   const email=String(session.user.email||'').toLowerCase();
@@ -356,6 +373,7 @@ async function enter(session){
   fillSop();
   await loadTasks();
   checkInput();
+  initRequests();
 }
 
 /* ---------- DATA ---------- */
@@ -557,6 +575,154 @@ function renderCarry(){
   autoSizeAll();
 }
 
+/* ---------- REQUEST ANTAR DEPARTEMEN ---------- */
+S.req=new Map();S.rch=null;
+const meId=()=>String(S.me.id);
+const RQ_ST={OPEN:['Menunggu diambil','warn'],ASSIGNED:['Sedang dikerjakan','ok'],REVIEW:['Menunggu konfirmasi pembuat','warn'],DONE:['Selesai','ok'],CANCELLED:['Dibatalkan','']};
+function rqErr(msg){const e=$('reqErr');e.classList.toggle('hidden',!msg);e.innerHTML=msg||''}
+async function loadRequests(){
+  const since=new Date(Date.now()-30*864e5).toISOString();
+  const {data,error}=await sb.from('requests').select('*')
+    .or('status.in.(OPEN,ASSIGNED,REVIEW),created_at.gte.'+since).order('created_at',{ascending:false}).limit(500);
+  if(error){rqErr('Fitur request belum siap: '+esc(error.message)+'. Pastikan SQL <b>requests.sql</b> sudah dijalankan di Supabase.');return false}
+  rqErr('');S.req=new Map(data.map(r=>[r.id,r]));renderReq();return true;
+}
+async function initRequests(){
+  if(S.rch){try{sb.removeChannel(S.rch)}catch(e){}S.rch=null}
+  const ok=await loadRequests();if(!ok)return;
+  S.rch=sb.channel('rq-'+meId()).on('postgres_changes',{event:'*',schema:'public',table:'requests'},onReqChange)
+    .subscribe(st=>{if(st==='SUBSCRIBED')loadRequests()});
+}
+function onReqChange(p){
+  if(!S.me)return;
+  const n=p.new,o=p.old,me=meId();
+  if(p.eventType==='DELETE'){S.req.delete(o.id);renderReq();return}
+  const prev=S.req.get(n.id);S.req.set(n.id,n);
+  if(!prev&&n.status==='OPEN'&&n.to_dept===S.me.division&&n.from_user_id!==me)toast('📢 Request baru: '+n.title);
+  else if(prev&&prev.status==='OPEN'&&n.status==='ASSIGNED'&&n.from_user_id===me)toast('Request "'+n.title+'" dikerjakan oleh '+n.assigned_name);
+  else if(prev&&prev.status!=='REVIEW'&&n.status==='REVIEW'&&n.from_user_id===me)toast('Request "'+n.title+'" selesai, mohon konfirmasi');
+  else if(prev&&prev.status==='REVIEW'&&n.status==='ASSIGNED'&&n.assigned_to===me)toast('Revisi diminta untuk "'+n.title+'"');
+  renderReq();
+}
+function rqWhen(iso){return iso?new Date(iso).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):''}
+function rcard(r,ctx){
+  const st=RQ_ST[r.status]||[r.status,''];
+  const me=meId(),admin=isAdmin();
+  const who=r.assigned_name||'?';
+  const label=r.status==='ASSIGNED'?'Dikerjakan oleh '+who:r.status==='REVIEW'?'Dikerjakan oleh '+who+' · menunggu konfirmasi':r.status==='DONE'?'Selesai · dikerjakan oleh '+who:st[0];
+  const late=r.deadline&&r.deadline<today()&&(r.status==='OPEN'||r.status==='ASSIGNED');
+  let act='';
+  if(ctx==='in'&&!admin)act=`<button class="btn" data-ra="assign" data-rid="${r.id}" type="button">✋ Assign to me</button>`;
+  if(ctx==='mine'){
+    if(r.status==='ASSIGNED')act=`<button class="btn" data-ra="done" data-rid="${r.id}" type="button">✔ Tandai selesai</button><button class="btn o" data-ra="release" data-rid="${r.id}" type="button">Lepas request</button>`;
+    else if(r.status==='REVIEW')act='<span class="mut">Menunggu konfirmasi dari pembuat request.</span>';
+  }
+  if(ctx==='out'){
+    if(r.status==='OPEN')act=`<button class="btn r" data-ra="cancel" data-rid="${r.id}" type="button">Batalkan</button>`;
+    else if(r.status==='REVIEW')act=`<button class="btn" data-ra="confirm" data-rid="${r.id}" type="button">✔ Konfirmasi selesai</button><button class="btn o" data-ra="revise" data-rid="${r.id}" type="button">Minta revisi</button>`;
+  }
+  if(admin)act+=`<button class="btn r" data-ra="del" data-rid="${r.id}" type="button">Hapus</button>`;
+  const revNote=r.rev_note&&r.status==='ASSIGNED'?`<div><span class="tag err">Revisi diminta</span> <span class="mut">${esc(r.rev_note)}</span></div>`:'';
+  return `<div class="task ${r.status==='DONE'?'lock':late?'od':''}">
+    <div class="row sp"><div class="row"><span class="tag ${st[1]}">${esc(label)}</span><span class="tag">${esc(r.from_name)} (${esc(r.from_dept)}) → ${esc(r.to_dept)}</span>${late?'<span class="tag err">Lewat deadline</span>':''}</div><span class="mut">${esc(rqWhen(r.created_at))}</span></div>
+    <div><b>${esc(r.title)}</b>${r.description?`<div class="mut" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.description)}</div>`:''}${r.deadline?`<div class="mut">Deadline: ${esc(fmt(r.deadline))}</div>`:''}</div>
+    ${revNote}${act?`<div class="row">${act}</div>`:''}</div>`;
+}
+function renderReq(){
+  if(!S.me)return;
+  const admin=isAdmin(),me=meId();
+  const all=[...S.req.values()].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  const inc=all.filter(r=>r.status==='OPEN'&&r.to_dept===S.me.division&&r.from_user_id!==me);
+  const mine=all.filter(r=>r.assigned_to===me&&(r.status==='ASSIGNED'||r.status==='REVIEW'));
+  const out=all.filter(r=>r.from_user_id===me);
+  const dh=S.depts.filter(d=>d!=='Admin'&&d!==S.me.division).map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  const ds=$('rqDept');if(ds.dataset.h!==dh){const cur=ds.value;ds.innerHTML=dh;ds.dataset.h=dh;if(cur)ds.value=cur}
+  const empty=t=>`<div class="mut">${t}</div>`;
+  ['rqInCard','rqMineCard','rqOutCard'].forEach(id=>$(id).classList.toggle('hidden',admin));
+  $('rqAllCard').classList.toggle('hidden',!admin);
+  $('rqMyDept').textContent=S.me.division;
+  $('rqInN').textContent=inc.length;$('rqMineN').textContent=mine.length;$('rqOutN').textContent=out.length;$('rqAllN').textContent=all.length;
+  $('rqIn').innerHTML=inc.map(r=>rcard(r,'in')).join('')||empty('Tidak ada request baru untuk departemenmu.');
+  $('rqMine').innerHTML=mine.map(r=>rcard(r,'mine')).join('')||empty('Belum ada request yang kamu ambil.');
+  $('rqOut').innerHTML=out.map(r=>rcard(r,'out')).join('')||empty('Kamu belum membuat request.');
+  $('rqAll').innerHTML=all.map(r=>rcard(r,'all')).join('')||empty('Belum ada request.');
+  const n=admin?0:inc.length+out.filter(r=>r.status==='REVIEW').length;
+  const bd=$('reqBadge');bd.textContent=n;bd.classList.toggle('hidden',!n);
+  autoSizeAll();
+}
+async function rqUpd(id,f,cond){
+  let q=sb.from('requests').update(f).eq('id',id);
+  for(const k in cond)q=q.eq(k,cond[k]);
+  const {data,error}=await q.select();
+  if(error){toast('Gagal: '+error.message,1);return null}
+  if(!data.length){toast('Status request sudah berubah, data dimuat ulang',1);await loadRequests();return null}
+  S.req.set(id,data[0]);renderReq();return data[0];
+}
+async function rqAssign(id){
+  const r=S.req.get(id);if(!r)return;
+  const got=await rqUpd(id,{status:'ASSIGNED',assigned_to:meId(),assigned_name:S.me.name,assigned_at:new Date().toISOString()},{status:'OPEN'});
+  if(!got)return;
+  const task=mk(S.me,today(),'Request: '+r.title,'none','Medium','Dari '+r.from_name+' ('+r.from_dept+')'+(r.description?' - '+r.description:''));
+  const ok=await addRows([task],task.task_date);
+  if(!ok){
+    await rqUpd(id,{status:'OPEN',assigned_to:null,assigned_name:null,assigned_at:null},{assigned_to:meId()});
+    toast('Gagal membuat kerjaan KPI, request dikembalikan ke antrian',1);return;
+  }
+  await rqUpd(id,{task_id:task.id},{assigned_to:meId()});
+  toast('Request diambil dan masuk ke kerjaanmu');
+}
+async function rqDone(id){
+  const r=S.req.get(id);if(!r)return;
+  const got=await rqUpd(id,{status:'REVIEW',done_at:new Date().toISOString()},{status:'ASSIGNED',assigned_to:meId()});
+  if(!got)return;
+  if(r.task_id){await patch(r.task_id,{status:'Done',is_locked:true,review_status:isMg({member_id:S.me.id})?'PENDING':'NONE'});await loadTasks()}
+  toast('Ditandai selesai, menunggu konfirmasi pembuat request');
+}
+async function rqRelease(id){
+  const r=S.req.get(id);if(!r)return;
+  if(!confirm('Lepas request ini? Request kembali ke antrian departemen dan kerjaan KPI-nya dihapus dari daftarmu.'))return;
+  const got=await rqUpd(id,{status:'OPEN',assigned_to:null,assigned_name:null,assigned_at:null,task_id:null,rev_note:null,done_at:null},{status:'ASSIGNED',assigned_to:meId()});
+  if(!got)return;
+  if(r.task_id){
+    await sb.from('tasks').delete().eq('id',r.task_id);
+    S.tasks=S.tasks.filter(t=>t.id!==r.task_id);S.carry=S.carry.filter(t=>t.id!==r.task_id);render();checkInput();
+  }
+  toast('Request dilepas');
+}
+$('rqSend').onclick=async()=>{
+  const to_dept=$('rqDept').value,title=$('rqTitle').value.trim();
+  if(!to_dept){toast('Pilih departemen tujuan',1);return}
+  if(!title){toast('Judul request wajib diisi',1);return}
+  $('rqSend').disabled=true;
+  const row={from_user_id:meId(),from_name:S.me.name,from_dept:S.me.division,to_dept,title,description:$('rqDesc').value.trim(),deadline:$('rqDue').value||null,status:'OPEN'};
+  const {data,error}=await sb.from('requests').insert(row).select();
+  $('rqSend').disabled=false;
+  if(error||!data||!data.length){toast('Gagal mengirim request'+(error?': '+error.message:''),1);return}
+  S.req.set(data[0].id,data[0]);
+  $('rqTitle').value='';$('rqDesc').value='';$('rqDue').value='';autoSizeAll();
+  renderReq();toast('Request terkirim ke '+to_dept);
+};
+$('t-req').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-ra]');if(!b)return;
+  const id=b.dataset.rid,a=b.dataset.ra;
+  b.disabled=true;
+  try{
+    if(a==='assign')await rqAssign(id);
+    else if(a==='done')await rqDone(id);
+    else if(a==='release')await rqRelease(id);
+    else if(a==='cancel'){if(confirm('Batalkan request ini?'))await rqUpd(id,{status:'CANCELLED'},{status:'OPEN',from_user_id:meId()})}
+    else if(a==='confirm'){const g=await rqUpd(id,{status:'DONE',confirmed_at:new Date().toISOString(),rev_note:null},{status:'REVIEW',from_user_id:meId()});if(g)toast('Request dikonfirmasi selesai')}
+    else if(a==='revise'){const n=prompt('Apa yang perlu direvisi?');if(n===null)return;if(!n.trim()){toast('Catatan revisi wajib diisi',1);return}await rqUpd(id,{status:'ASSIGNED',rev_note:n.trim(),done_at:null},{status:'REVIEW',from_user_id:meId()})}
+    else if(a==='del'){
+      if(!isAdmin()||!confirm('Hapus request ini permanen?'))return;
+      const {error}=await sb.from('requests').delete().eq('id',id);
+      if(error){toast('Gagal menghapus: '+error.message,1);return}
+      S.req.delete(id);renderReq();toast('Request dihapus');
+    }
+  }finally{b.disabled=false}
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.me)loadRequests()});
+
 /* ---------- PILIH & HAPUS MASSAL (Admin) ---------- */
 S.sel=new Set();S.selMode=false;S.vis=[];S.pk=null;
 function updSel(){
@@ -710,8 +876,9 @@ $('carryGo').onclick=()=>{$('fStatus').value='ALL';document.querySelector('.tabs
 
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
-  ['dash','plan','upd','pk','users'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
+  ['dash','plan','upd','req','pk','users'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
   setTimeout(autoSizeAll,0);
+  if(b.dataset.tab==='req')renderReq();
   if(b.dataset.tab==='pk')renderPk();
   if(b.dataset.tab==='users')renderUsers();
   if(b.dataset.tab==='dash')renderDash();
