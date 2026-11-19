@@ -450,7 +450,9 @@ function renderDash(){
   $('revN').textContent=m.rev;$('revBox').classList.toggle('hidden',!(isAdmin()&&m.rev>0));$('kTotal').textContent=m.total;$('kLock').textContent=S.tasks.filter(t=>t.is_locked).length+' sudah dikunci';
   $('kDone').textContent=done;$('kDoneSub').textContent=pct(done,m.total)+'% selesai · '+m.no+' kurang bukti'+(m.rev?' · '+m.rev+' menunggu review':'');
   $('kProg').textContent=m.prog;$('kProgSub').textContent=pct(m.prog,m.total)+'% sedang dikerjakan';
-  $('kPend').textContent=m.pend;$('kPendSub').textContent=m.over+' tertinggal dari hari lalu';
+  const cN=carryOpenRows().length;
+  $('kPend').textContent=m.pend+cN;
+  $('kPendSub').textContent=m.pend+' pending · '+(m.over+cN)+' tertinggal dari hari lalu'+(cN?' ('+cN+' dari sebelum periode)':'');
   const members=(isAdmin()?staffList():[S.me]).filter(u=>S.uid==='ALL'||u.id===S.uid);
   const st=members.map(u=>metrics(S.tasks.filter(t=>t.member_id===u.id)));
   $('recap').innerHTML=members.map((u,i)=>{
@@ -528,6 +530,11 @@ const carryOk=t=>t.status!=='Done'||isPend(t);
 const hideKey=()=>'kpi_carry_hide_'+(S.me?S.me.id:'');
 function loadHide(){try{return new Set(JSON.parse(localStorage.getItem(hideKey())||'[]'))}catch(e){return new Set()}}
 function saveHide(){try{localStorage.setItem(hideKey(),JSON.stringify([...S.carryHide]))}catch(e){}}
+function carryOpenRows(){
+  const uid=S.me?S.me.id:null;
+  if(S.hideFor!==uid){S.carryHide=loadHide();S.hideFor=uid}
+  return S.carry.filter(t=>carryOk(t)&&!S.carryHide.has(t.id));
+}
 function renderCarry(){
   const box=$('carryBox'),ban=$('carryBanner');
   const uid=S.me?S.me.id:null;
