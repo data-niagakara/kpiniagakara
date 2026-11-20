@@ -130,6 +130,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <button data-tab="plan">Input Kerjaan</button>
     <button data-tab="upd">Update Status & Bukti</button>
     <button data-tab="req">Request Task <span id="reqBadge" class="tag err hidden"></span></button>
+    <button data-tab="rec">Rekap Input</button>
     <button data-tab="pk">Product Knowledge</button>
     <button data-tab="users" class="hidden">User</button>
   </div>
@@ -235,6 +236,23 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <div id="rqOutCard" class="card"><h2>📤 Request Task yang saya buat (<span id="rqOutN">0</span>)</h2><div id="rqOut"></div></div>
     <div id="rqAllCard" class="card hidden"><h2>Semua Request Task (<span id="rqAllN">0</span>)</h2><div id="rqAll"></div></div>
   </section>
+  <section id="t-rec" class="hidden">
+    <div class="card">
+      <h2>Rekap Belum Input Kerjaan</h2>
+      <div class="mut">Hari kerja yang tidak ada kerjaan terinput, lengkap dengan alasannya.</div>
+      <div class="row" style="gap:12px;margin-top:8px;align-items:flex-end">
+        <div><label for="recFrom">Dari</label><input type="date" id="recFrom"></div>
+        <div><label for="recTo">Sampai</label><input type="date" id="recTo"></div>
+        <div id="recUserWrap" class="hidden"><label for="recUser">Anggota</label><select id="recUser"></select></div>
+        <label style="display:inline-flex;align-items:center;gap:6px;margin:0;cursor:pointer"><input type="checkbox" id="recNo"> Hanya yang belum ada alasan</label>
+        <button class="btn" id="recGo" type="button">Tampilkan</button>
+        <button class="btn o" id="recCsv" type="button">Unduh CSV</button>
+      </div>
+    </div>
+    <div id="recErr" class="card hidden" style="background:var(--errb);border-color:#fecdd3"></div>
+    <div id="recSum"></div><div id="recBody"></div>
+  </section>
+
   <section id="t-pk" class="hidden">
     <div class="card"><h2 style="margin:0">Product Knowledge</h2><div class="mut">Pilih produk untuk melihat materi dan aset.</div></div>
     <div id="pkBox"></div>
@@ -380,6 +398,8 @@ async function enter(session){
   await loadTasks();
   checkInput();
   initRequests();
+  S.rs=new Map();S.rec=null;$('recTo').value='';$('recFrom').value='';
+  checkMissed();
 }
 
 /* ---------- DATA ---------- */
@@ -962,9 +982,10 @@ $('carryGo').onclick=()=>{$('fStatus').value='ALL';document.querySelector('.tabs
 
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
-  ['dash','plan','upd','req','pk','users'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
+  ['dash','plan','upd','req','rec','pk','users'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.tab));
   setTimeout(autoSizeAll,0);
   if(b.dataset.tab==='req')renderReq();
+  if(b.dataset.tab==='rec')openRec();
   if(b.dataset.tab==='pk')renderPk();
   if(b.dataset.tab==='users')renderUsers();
   if(b.dataset.tab==='dash')renderDash();
@@ -1312,6 +1333,157 @@ $('warnBox').addEventListener('click',e=>{
 });
 setInterval(checkInput,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkInput()});
+
+/* ---------- ALASAN BELUM INPUT (H+1) & REKAP ---------- */
+S.rs=new Map();S.rec=null;S.rsOk=true;
+$('warnBox').insertAdjacentHTML('afterend','<div id="missBox" class="card hidden" style="background:#fff7ed;border-color:#fed7aa"></div>');
+const rsKey=(m,d)=>String(m)+'|'+d;
+const addDays=(ds,n)=>{const [y,m,d]=ds.split('-').map(Number);return new Date(Date.UTC(y,m-1,d+n)).toISOString().slice(0,10)};
+const wdOf=ds=>{const [y,m,d]=ds.split('-').map(Number);return new Date(Date.UTC(y,m-1,d)).getUTCDay()};
+const isWork=ds=>!HARI_LIBUR.includes(wdOf(ds));
+function prevWorkday(ds){let d=addDays(ds,-1);for(let i=0;i<7&&!isWork(d);i++)d=addDays(d,-1);return d}
+const jktDate=iso=>iso?new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date(iso)):null;
+const rsStart=u=>jktDate(u.created_at||u.joined_at||null);
+const rsMembers=()=>isAdmin()?S.users.filter(u=>u.role!=='ADMIN'):[S.me];
+const rsWho=r=>esc(r.reason_by_name||'?')+(r.reason_by_role==='ADMIN'?' (Admin)':'');
+async function rsPages(build){
+  const out=[];
+  for(let from=0;;from+=1000){
+    const {data,error}=await build().range(from,from+999);
+    if(error)return{error};
+    out.push(...data);
+    if(data.length<1000)break;
+  }
+  return{data:out};
+}
+async function rsLoad(from,to){
+  const mine=!isAdmin(),me=String(S.me.id);
+  const t=await rsPages(()=>{const q=sb.from('tasks').select('member_id,task_date').gte('task_date',from).lte('task_date',to).order('task_date').order('id');return mine?q.eq('member_id',S.me.id):q});
+  if(t.error)return{error:t.error};
+  const r=await rsPages(()=>{const q=sb.from('input_reasons').select('*').gte('miss_date',from).lte('miss_date',to).order('miss_date').order('id');return mine?q.eq('member_id',me):q});
+  S.rsOk=!r.error;
+  if(!r.error)r.data.forEach(x=>S.rs.set(rsKey(x.member_id,x.miss_date),x));
+  return{tasks:t.data};
+}
+/* hari kerja (bukan HARI_LIBUR) sampai kemarin yang tidak punya kerjaan sama sekali */
+function rsCompute(from,to,tasks,members){
+  const has=new Set(tasks.map(t=>String(t.member_id)+'|'+t.task_date));
+  const yday=addDays(wib().date,-1),end=to<yday?to:yday,out=[];
+  for(let d=from;d<=end;d=addDays(d,1)){
+    if(!isWork(d))continue;
+    members.forEach(u=>{
+      const s=rsStart(u);if(s&&d<=s)return;
+      if(!has.has(String(u.id)+'|'+d))out.push({u,date:d});
+    });
+  }
+  return out;
+}
+async function rsSave(m,d,reason){
+  reason=String(reason||'').trim();
+  if(!reason){toast('Alasan wajib diisi',1);return false}
+  const row={member_id:String(m),miss_date:d,reason,reason_by_id:String(S.me.id),reason_by_name:S.me.name,reason_by_role:isAdmin()?'ADMIN':'MEMBER',updated_at:new Date().toISOString()};
+  const {data,error}=await sb.from('input_reasons').upsert(row,{onConflict:'member_id,miss_date'}).select();
+  if(error||!data||!data.length){toast('Gagal menyimpan alasan'+(error?': '+error.message:''),1);return false}
+  S.rs.set(rsKey(m,d),data[0]);toast('Alasan tersimpan');return true;
+}
+
+/* --- Notifikasi H+1 --- */
+let mClosed='';
+async function checkMissed(){
+  const box=$('missBox'),hide=()=>box.classList.add('hidden');
+  if(!S.me){hide();return}
+  const day=prevWorkday(wib().date);
+  const d=await rsLoad(day,day);
+  if(d.error||!S.me){hide();return}
+  const miss=rsCompute(day,day,d.tasks,rsMembers());
+  const list=S.rsOk?miss.filter(x=>!S.rs.has(rsKey(x.u.id,day))):miss;
+  const sig=day+'|'+list.map(x=>x.u.id).join(',');
+  if(!list.length||mClosed===sig){hide();return}
+  box.dataset.sig=sig;
+  const rowH=x=>`<div class="row" data-rsrow="1" style="gap:8px;align-items:center;margin-top:6px"><span class="tag ${x.u.grp==='MAGANG'?'warn':''}">${esc(x.u.name)} · ${esc(x.u.division)}${x.u.grp==='MAGANG'?' · Magang':''}</span>${S.rsOk?`<input class="rsin" maxlength="300" placeholder="Alasan (mis. sakit, izin, libur, lupa input)" style="flex:1;min-width:180px"><button class="btn" data-rsave="1" data-m="${esc(String(x.u.id))}" data-d="${day}" type="button">Simpan alasan</button>`:''}</div>`;
+  const note=S.rsOk?'':'<div class="mut" style="margin-top:6px">Fitur alasan belum aktif: jalankan <b>input_reasons.sql</b> di Supabase.</div>';
+  const btns='<div class="row"><button class="btn o" data-mrec="1" type="button">Lihat rekap</button><button class="btn o" data-mclose="1" type="button">Tutup</button></div>';
+  if(isAdmin()){
+    box.innerHTML=`<div class="row sp"><b>📝 ${list.length} anggota belum input kerjaan pada ${esc(fmt(day))}${S.rsOk?' dan belum ada alasannya':''}</b>${btns}</div><div class="mut">Admin bisa mengisikan alasan atas nama anggota.</div>${list.map(rowH).join('')}${note}`;
+  }else{
+    box.innerHTML=`<div class="row sp"><div><b>📝 Kamu belum input kerjaan pada ${esc(fmt(day))}</b><div class="mut">Tulis alasannya supaya tercatat di rekap (admin juga bisa mengisinya).</div></div>${btns}</div>${list.map(rowH).join('')}${note}`;
+  }
+  box.classList.remove('hidden');
+}
+async function rsClick(e){
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.mclose){mClosed=$('missBox').dataset.sig||'';$('missBox').classList.add('hidden');return}
+  if(b.dataset.mrec){document.querySelector('.tabs button[data-tab="rec"]').click();return}
+  if(!b.dataset.rsave)return;
+  const row=b.closest('[data-rsrow]'),inp=row&&row.querySelector('.rsin');if(!inp)return;
+  b.disabled=true;
+  try{if(await rsSave(b.dataset.m,b.dataset.d,inp.value)){await checkMissed();if(S.rec)renderRecView()}}
+  finally{b.disabled=false}
+}
+$('missBox').addEventListener('click',rsClick);
+$('t-rec').addEventListener('click',rsClick);
+setInterval(checkMissed,300000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.me)checkMissed()});
+
+/* --- Tab Rekap --- */
+function recRows(){
+  const D=S.rec;if(!D)return[];
+  const fu=isAdmin()?$('recUser').value:'ALL';
+  const rows=D.miss.filter(x=>fu==='ALL'||String(x.u.id)===fu).map(x=>({u:x.u,date:x.date,r:S.rs.get(rsKey(x.u.id,x.date))||null}));
+  rows.sort((a,b)=>b.date.localeCompare(a.date)||String(a.u.name).localeCompare(String(b.u.name)));
+  return rows;
+}
+const recShown=()=>{const all=recRows();return $('recNo').checked?all.filter(x=>!x.r):all};
+function renderRecView(){
+  const D=S.rec;if(!D)return;
+  const adm=isAdmin();
+  $('recErr').classList.toggle('hidden',S.rsOk);
+  if(!S.rsOk)$('recErr').innerHTML='Tabel alasan belum siap. Jalankan <b>input_reasons.sql</b> di Supabase SQL Editor.';
+  const all=recRows(),withR=all.filter(x=>x.r).length,rows=recShown();
+  $('recSum').innerHTML=`<div class="card"><div class="row" style="gap:28px"><div><div class="mut">Hari kerja kosong</div><b style="font-size:22px">${all.length}</b></div><div><div class="mut">Sudah ada alasan</div><b style="font-size:22px;color:var(--ok)">${withR}</b></div><div><div class="mut">Belum ada alasan</div><b style="font-size:22px;color:var(--err)">${all.length-withR}</b></div></div><div class="mut" style="margin-top:6px">Periode ${esc(fmt(D.from))} s/d ${esc(fmt(D.to))}. Hari ini tidak dihitung dan hari libur (${HARI_LIBUR.map(i=>HARI[i]).join(', ')}) dilewati.</div></div>`;
+  let per='';
+  if(adm&&all.length){
+    const m=new Map();
+    all.forEach(x=>{const k=String(x.u.id);if(!m.has(k))m.set(k,{u:x.u,n:0,w:0});const o=m.get(k);o.n++;if(x.r)o.w++});
+    per=`<div class="card"><h2>Per anggota</h2><div style="overflow-x:auto"><table><thead><tr><th>Nama</th><th>Divisi</th><th>Hari kosong</th><th>Ada alasan</th><th>Belum ada alasan</th></tr></thead><tbody>${[...m.values()].sort((a,b)=>b.n-a.n).map(o=>`<tr><td>${esc(o.u.name)}${o.u.grp==='MAGANG'?' <span class="tag warn">Magang</span>':''}</td><td>${esc(o.u.division)}</td><td>${o.n}</td><td>${o.w}</td><td>${o.n-o.w?`<span class="tag err">${o.n-o.w}</span>`:'0'}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }
+  const trs=rows.map(x=>`<tr data-rsrow="1"><td style="white-space:nowrap">${esc(fmt(x.date))}</td>${adm?`<td>${esc(x.u.name)}<div class="mut">${esc(x.u.division)}${x.u.grp==='MAGANG'?' · Magang':''}</div></td>`:''}<td style="min-width:260px">${S.rsOk?`<div class="row" style="gap:6px;flex-wrap:nowrap"><input class="rsin" maxlength="300" value="${esc(x.r?x.r.reason:'')}" placeholder="Tulis alasan..." style="flex:1;min-width:140px"><button class="btn${x.r?' o':''}" data-rsave="1" data-m="${esc(String(x.u.id))}" data-d="${x.date}" type="button">${x.r?'Ubah':'Simpan'}</button></div>`:''}${x.r?`<div class="mut">Diisi oleh ${rsWho(x.r)} · ${esc(rqWhen(x.r.updated_at))}</div>`:'<div class="mut" style="color:var(--err)">Belum ada alasan</div>'}</td></tr>`).join('');
+  $('recBody').innerHTML=per+`<div class="card"><h2>Detail (${rows.length})</h2><div style="overflow-x:auto"><table><thead><tr><th>Tanggal</th>${adm?'<th>Anggota</th>':''}<th>Alasan</th></tr></thead><tbody>${trs||`<tr><td colspan="${adm?3:2}" class="mut">Tidak ada data. Semua hari kerja sudah terisi 🎉</td></tr>`}</tbody></table></div></div>`;
+}
+async function recLoad(){
+  const from=$('recFrom').value,to=$('recTo').value;
+  if(!from||!to||from>to){toast('Rentang tanggal tidak valid',1);return}
+  if((Date.parse(to)-Date.parse(from))/864e5>92){toast('Maksimal rentang 93 hari',1);return}
+  $('recGo').disabled=true;$('recSum').innerHTML='';$('recBody').innerHTML='<div class="mut">Memuat...</div>';
+  try{
+    const d=await rsLoad(from,to);
+    if(d.error){$('recBody').innerHTML='';toast('Gagal memuat rekap: '+d.error.message,1);return}
+    S.rec={from,to,miss:rsCompute(from,to,d.tasks,rsMembers())};
+    renderRecView();
+  }finally{$('recGo').disabled=false}
+}
+function openRec(){
+  const adm=isAdmin();$('recUserWrap').classList.toggle('hidden',!adm);
+  if(adm){
+    const cur=$('recUser').value||'ALL';
+    $('recUser').innerHTML='<option value="ALL">Semua anggota</option>'+rsMembers().map(u=>`<option value="${esc(String(u.id))}">${esc(u.name)} — ${esc(u.division)}</option>`).join('');
+    $('recUser').value=cur;if(!$('recUser').value)$('recUser').value='ALL';
+  }
+  if(!$('recTo').value){const y=addDays(wib().date,-1);$('recTo').value=y;$('recFrom').value=addDays(y,-29)}
+  if(!S.rec)recLoad();
+}
+$('recGo').onclick=recLoad;
+$('recNo').onchange=renderRecView;$('recUser').onchange=renderRecView;
+$('recCsv').onclick=()=>{
+  const rows=recShown();
+  if(!rows.length){toast('Tidak ada data untuk diunduh',1);return}
+  const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const head=['Tanggal','Nama','Divisi','Grup','Alasan','Diisi oleh','Peran pengisi','Waktu diisi'];
+  const body=rows.map(x=>[x.date,x.u.name,x.u.division,x.u.grp==='MAGANG'?'Magang':'Internal',x.r?x.r.reason:'',x.r?x.r.reason_by_name:'',x.r?(x.r.reason_by_role==='ADMIN'?'Admin':'Anggota'):'',x.r?x.r.updated_at:'']);
+  const csv='\ufeff'+[head,...body].map(r=>r.map(cell).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='rekap-belum-input_'+S.rec.from+'_sd_'+S.rec.to+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
 
 /* ---------- START ---------- */
 (async()=>{
