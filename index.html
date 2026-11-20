@@ -1336,6 +1336,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkInput
 
 /* ---------- ALASAN BELUM INPUT (H+1) & REKAP ---------- */
 S.rs=new Map();S.rec=null;S.rsOk=true;
+const MULAI_PAKAI='2026-11-16'; // hari pertama platform dipakai; tanggal sebelumnya tidak dihitung
 $('warnBox').insertAdjacentHTML('afterend','<div id="missBox" class="card hidden" style="background:#fff7ed;border-color:#fed7aa"></div>');
 const rsKey=(m,d)=>String(m)+'|'+d;
 const addDays=(ds,n)=>{const [y,m,d]=ds.split('-').map(Number);return new Date(Date.UTC(y,m-1,d+n)).toISOString().slice(0,10)};
@@ -1369,10 +1370,10 @@ async function rsLoad(from,to){
 function rsCompute(from,to,tasks,members){
   const has=new Set(tasks.map(t=>String(t.member_id)+'|'+t.task_date));
   const yday=addDays(wib().date,-1),end=to<yday?to:yday,out=[];
-  for(let d=from;d<=end;d=addDays(d,1)){
+  for(let d=from<MULAI_PAKAI?MULAI_PAKAI:from;d<=end;d=addDays(d,1)){
     if(!isWork(d))continue;
     members.forEach(u=>{
-      const s=rsStart(u);if(s&&d<=s)return;
+      const s=rsStart(u);if(s&&s>MULAI_PAKAI&&d<=s)return;
       if(!has.has(String(u.id)+'|'+d))out.push({u,date:d});
     });
   }
@@ -1440,7 +1441,7 @@ function renderRecView(){
   $('recErr').classList.toggle('hidden',S.rsOk);
   if(!S.rsOk)$('recErr').innerHTML='Tabel alasan belum siap. Jalankan <b>input_reasons.sql</b> di Supabase SQL Editor.';
   const all=recRows(),withR=all.filter(x=>x.r).length,rows=recShown();
-  $('recSum').innerHTML=`<div class="card"><div class="row" style="gap:28px"><div><div class="mut">Hari kerja kosong</div><b style="font-size:22px">${all.length}</b></div><div><div class="mut">Sudah ada alasan</div><b style="font-size:22px;color:var(--ok)">${withR}</b></div><div><div class="mut">Belum ada alasan</div><b style="font-size:22px;color:var(--err)">${all.length-withR}</b></div></div><div class="mut" style="margin-top:6px">Periode ${esc(fmt(D.from))} s/d ${esc(fmt(D.to))}. Hari ini tidak dihitung dan hari libur (${HARI_LIBUR.map(i=>HARI[i]).join(', ')}) dilewati.</div></div>`;
+  $('recSum').innerHTML=`<div class="card"><div class="row" style="gap:28px"><div><div class="mut">Hari kerja kosong</div><b style="font-size:22px">${all.length}</b></div><div><div class="mut">Sudah ada alasan</div><b style="font-size:22px;color:var(--ok)">${withR}</b></div><div><div class="mut">Belum ada alasan</div><b style="font-size:22px;color:var(--err)">${all.length-withR}</b></div></div><div class="mut" style="margin-top:6px">Periode ${esc(fmt(D.from))} s/d ${esc(fmt(D.to))} (dihitung sejak ${esc(fmt(MULAI_PAKAI))}). Hari ini tidak dihitung dan hari libur (${HARI_LIBUR.map(i=>HARI[i]).join(', ')}) dilewati.</div></div>`;
   let per='';
   if(adm&&all.length){
     const m=new Map();
@@ -1451,7 +1452,8 @@ function renderRecView(){
   $('recBody').innerHTML=per+`<div class="card"><h2>Detail (${rows.length})</h2><div style="overflow-x:auto"><table><thead><tr><th>Tanggal</th>${adm?'<th>Anggota</th>':''}<th>Alasan</th></tr></thead><tbody>${trs||`<tr><td colspan="${adm?3:2}" class="mut">Tidak ada data. Semua hari kerja sudah terisi 🎉</td></tr>`}</tbody></table></div></div>`;
 }
 async function recLoad(){
-  const from=$('recFrom').value,to=$('recTo').value;
+  let from=$('recFrom').value;const to=$('recTo').value;
+  if(from&&from<MULAI_PAKAI){from=MULAI_PAKAI;$('recFrom').value=from}
   if(!from||!to||from>to){toast('Rentang tanggal tidak valid',1);return}
   if((Date.parse(to)-Date.parse(from))/864e5>92){toast('Maksimal rentang 93 hari',1);return}
   $('recGo').disabled=true;$('recSum').innerHTML='';$('recBody').innerHTML='<div class="mut">Memuat...</div>';
@@ -1469,7 +1471,7 @@ function openRec(){
     $('recUser').innerHTML='<option value="ALL">Semua anggota</option>'+rsMembers().map(u=>`<option value="${esc(String(u.id))}">${esc(u.name)} — ${esc(u.division)}</option>`).join('');
     $('recUser').value=cur;if(!$('recUser').value)$('recUser').value='ALL';
   }
-  if(!$('recTo').value){const y=addDays(wib().date,-1);$('recTo').value=y;$('recFrom').value=addDays(y,-29)}
+  if(!$('recTo').value){const y=addDays(wib().date,-1);$('recTo').value=y;const f=addDays(y,-29);$('recFrom').value=f<MULAI_PAKAI?MULAI_PAKAI:f}
   if(!S.rec)recLoad();
 }
 $('recGo').onclick=recLoad;
