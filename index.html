@@ -615,8 +615,17 @@ async function reconcileReqs(){
     }
   }finally{S.recon=false}
 }
+/* Daftar user tujuan request: lewat RPC user_directory (security definer) supaya akun non-admin
+   tetap bisa melihat semua user meski RLS tabel users membatasi. Fallback ke S.users jika RPC gagal. */
+async function loadDir(){
+  const {data,error}=await sb.rpc('user_directory');
+  if(!error&&Array.isArray(data)){S.dir=data;return}
+  console.warn('user_directory gagal, pakai S.users:',error&&error.message);
+  if(!S.dir)S.dir=S.users.filter(u=>u.role!=='ADMIN').map(u=>({id:String(u.id),name:u.name,division:u.division,grp:u.grp,role:u.role}));
+}
 async function initRequests(){
   if(S.rch){try{sb.removeChannel(S.rch)}catch(e){}S.rch=null}
+  S.dir=null;await loadDir();
   const ok=await loadRequests();if(!ok)return;
   S.rch=sb.channel('rq-'+meId()).on('postgres_changes',{event:'*',schema:'public',table:'requests'},onReqChange)
     .subscribe(st=>{if(st==='SUBSCRIBED')loadRequests()});
@@ -664,8 +673,15 @@ function renderReq(){
   const out=all.filter(r=>r.from_user_id===me);
   const dh=S.depts.filter(d=>d!=='Admin'&&d!==S.me.division).map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
   const ds=$('rqDept');if(ds.dataset.h!==dh){const cur=ds.value;ds.innerHTML=dh;ds.dataset.h=dh;if(cur)ds.value=cur}
-  const uh=S.users.filter(u=>u.role!=='ADMIN'&&String(u.id)!==me).map(u=>`<option value="${esc(String(u.id))}">${esc(u.name)} (${esc(u.division)}${u.grp==='MAGANG'?', Magang':''})</option>`).join('');
-  const us=$('rqUser');if(us.dataset.h!==uh){const cur=us.value;us.innerHTML=uh;us.dataset.h=uh;if(cur)us.value=cur}
+  const dirList=(S.dir||[]).filter(u=>u.role!=='ADMIN'&&String(u.id)!==me);
+  const uh=dirList.map(u=>`<option value="${esc(String(u.id))}">${esc(u.name)} (${esc(u.division)}${u.grp==='MAGANG'?', Magang':''})</option>`).join('');
+  const us=$('rqUser');
+  /* cek juga jumlah option aktual, jangan cuma percaya cache dataset.h */
+  if(us.dataset.h!==uh||us.options.length!==Math.max(dirList.length,1)){
+    const cur=us.value;
+    us.innerHTML=uh||'<option value="">(Belum ada user tujuan)</option>';
+    us.dataset.h=uh;if(cur)us.value=cur;
+  }
   const empty=t=>`<div class="mut">${t}</div>`;
   ['rqInCard','rqMineCard','rqOutCard'].forEach(id=>$(id).classList.toggle('hidden',admin));
   $('rqAllCard').classList.toggle('hidden',!admin);
@@ -751,7 +767,7 @@ $('rqSend').onclick=async()=>{
   const title=$('rqTitle').value.trim();
   let to_dept,to_user_id=null,to_user_name=null;
   if(rqMode()==='user'){
-    const u=S.users.find(x=>String(x.id)===$('rqUser').value);
+    const u=(S.dir||[]).find(x=>String(x.id)===$('rqUser').value);
     if(!u){toast('Pilih user tujuan',1);return}
     to_dept=u.division;to_user_id=String(u.id);to_user_name=u.name;
   }else{
@@ -787,8 +803,9 @@ $('t-req').addEventListener('click',async e=>{
     }
   }finally{b.disabled=false}
 });
-document.querySelectorAll('input[name="rqMode"]').forEach(r=>r.onchange=()=>{
+document.querySelectorAll('input[name="rqMode"]').forEach(r=>r.onchange=async()=>{
   const u=rqMode()==='user';$('rqDeptWrap').classList.toggle('hidden',u);$('rqUserWrap').classList.toggle('hidden',!u);
+  if(u){await loadDir();renderReq()}
 });
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.me)loadRequests()});
 
