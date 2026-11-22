@@ -131,9 +131,11 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <button data-tab="plan">Input Kerjaan</button>
     <button data-tab="upd">Update Status & Bukti</button>
     <button data-tab="req">Request Task <span id="reqBadge" class="tag err hidden"></span></button>
+    <button data-tab="lv">Izin <span id="lvBadge" class="tag err hidden"></span></button>
     <button data-tab="rec">Rekap Input</button>
     <button data-tab="sop">Kelola SOP</button>
     <button data-tab="pk">Product Knowledge</button>
+    <button data-tab="kr" class="hidden">Rekap Kerjaan</button>
     <button data-tab="users" class="hidden">User</button>
   </div>
 
@@ -294,6 +296,46 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     <div id="dmSum"></div>
     <div class="card" style="overflow-x:auto">
       <table><thead><tr><th>Tanggal</th><th>Kerjaan</th><th>Prioritas</th><th>Status / progress</th><th>Bukti</th><th>Catatan</th></tr></thead><tbody id="dmBody"></tbody></table>
+    </div>
+  </section>
+
+  <section id="t-lv" class="hidden">
+    <div class="card" id="lvFormCard">
+      <h2>Pengajuan Izin</h2>
+      <div class="mut" id="lvHint"></div>
+      <div class="row" style="gap:12px;margin-top:8px;align-items:flex-end">
+        <div id="lvMemW" class="hidden"><label for="lvMem">Anggota</label><select id="lvMem"></select></div>
+        <div><label for="lvKind">Jenis</label><select id="lvKind"><option value="IZIN">Izin</option><option value="SAKIT">Sakit</option><option value="CUTI">Cuti</option></select></div>
+        <div><label for="lvFrom">Dari</label><input type="date" id="lvFrom"></div>
+        <div><label for="lvTo">Sampai (opsional)</label><input type="date" id="lvTo"></div>
+      </div>
+      <label for="lvReason" style="margin-top:8px">Alasan</label>
+      <textarea id="lvReason" rows="2" maxlength="300" placeholder="Contoh: Acara keluarga di luar kota" style="width:100%"></textarea>
+      <div class="row" style="margin-top:10px"><button class="btn" id="lvSend" type="button">Ajukan izin</button></div>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <div class="row sp"><h2 style="margin:0">Daftar pengajuan</h2><div id="lvFiltW" class="hidden"><select id="lvFilt" aria-label="Filter status"><option value="ALL">Semua status</option><option value="PENDING">Menunggu</option><option value="APPROVED">Disetujui</option><option value="REJECTED">Ditolak</option></select></div></div>
+      <table style="margin-top:8px"><thead id="lvHead"></thead><tbody id="lvBody"></tbody></table>
+    </div>
+  </section>
+
+  <section id="t-kr" class="hidden">
+    <div class="card">
+      <h2>Rekap KPI Kerjaan (semua anggota)</h2>
+      <div class="mut">Satu tabel berisi seluruh kerjaan semua anggota. Atur filter, lalu unduh hasilnya sebagai CSV.</div>
+      <div class="row" style="gap:12px;margin-top:8px;align-items:flex-end">
+        <div><label for="krUser">Anggota</label><select id="krUser"></select></div>
+        <div><label for="krFrom">Dari</label><input type="date" id="krFrom"></div>
+        <div><label for="krTo">Sampai</label><input type="date" id="krTo"></div>
+        <div><label for="krSt">Status pekerjaan</label><select id="krSt"><option value="ALL">Semua status</option><option value="DONE_OK">Done · bukti sah</option><option value="DONE_NO">Done · kurang bukti</option><option value="REVIEW">Menunggu review (magang)</option><option value="PROG">In Progress</option><option value="PEND">Pending</option><option value="REJ">Ditolak</option></select></div>
+        <button class="btn" id="krGo" type="button">Tampilkan</button>
+        <button class="btn o" id="krCsv" type="button">Unduh CSV</button>
+      </div>
+    </div>
+    <div id="krSum"></div>
+    <div class="card" style="overflow-x:auto">
+      <table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kerjaan</th><th>Prioritas</th><th>Status</th><th>Bukti</th><th>Catatan</th></tr></thead><tbody id="krBody"></tbody></table>
+      <div id="krMore" style="margin-top:10px"></div>
     </div>
   </section>
 
@@ -458,6 +500,7 @@ async function enter(session){
   $('login').classList.add('hidden');$('app').classList.remove('hidden');
   $('who').textContent=me.name+' · '+(isAdmin()?'Admin':me.division+(me.grp==='MAGANG'?' · Magang':''));
   document.querySelector('.tabs button[data-tab="users"]').classList.toggle('hidden',!isAdmin());
+  document.querySelector('.tabs button[data-tab="kr"]').classList.toggle('hidden',!isAdmin());
   $('fromD').value=S.from;$('toD').value=S.to;$('pDate').value=today();
   if(isAdmin()){$('fUser').classList.remove('hidden');$('fGrp').classList.remove('hidden');$('fGrp').value='ALL'}
   $('pMember').disabled=!isAdmin();
@@ -512,7 +555,7 @@ async function loadTasks(){
   await loadExcuse(S.from,S.to);
   S.tasks=data;S.carry=ce?[]:(cd||[]);S.carryKeep=new Set();render();
 }
-const findT=id=>S.tasks.find(t=>t.id===id)||S.carry.find(t=>t.id===id)||((S.mem&&S.mem.tasks)||[]).find(t=>t.id===id);
+const findT=id=>S.tasks.find(t=>t.id===id)||S.carry.find(t=>t.id===id)||((S.mem&&S.mem.tasks)||[]).find(t=>t.id===id)||((S.kr&&S.kr.tasks)||[]).find(t=>t.id===id);
 async function patch(id,f){
   const {data,error}=await sb.from('tasks').update(f).eq('id',id).select();
   if(error||!data.length){toast('Gagal menyimpan'+(error?': '+error.message:' (tidak punya izin)'),1);await loadTasks();return}
@@ -1066,6 +1109,8 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==='req')renderReq();
   if(b.dataset.tab==='rec')openRec();
   if(b.dataset.tab==='sop')openSop();
+  if(b.dataset.tab==='lv')openLeave();
+  if(b.dataset.tab==='kr')openKr();
   if(b.dataset.tab==='pk')renderPk();
   if(b.dataset.tab==='users'){renderUsers();renderCfg();renderHol()}
   if(b.dataset.tab==='dash')renderDash();
@@ -1444,6 +1489,7 @@ async function rsLoad(from,to){
   const r=await rsPages(()=>{const q=sb.from('input_reasons').select('*').gte('miss_date',from).lte('miss_date',to).order('miss_date').order('id');return mine?q.eq('member_id',me):q});
   S.rsOk=!r.error;
   if(!r.error)r.data.forEach(x=>S.rs.set(rsKey(x.member_id,x.miss_date),x));
+  await loadLeaves(from,to);
   return{tasks:t.data};
 }
 /* hari kerja (bukan HARI_LIBUR) sampai kemarin yang tidak punya kerjaan sama sekali */
@@ -1454,6 +1500,7 @@ function rsCompute(from,to,tasks,members){
     if(!isWork(d))continue;
     members.forEach(u=>{
       const s=rsStart(u);if(s&&s>MULAI_PAKAI&&d<=s)return;
+      if(leaveCovers(u.id,d))return;
       if(!has.has(String(u.id)+'|'+d))out.push({u,date:d});
     });
   }
@@ -1535,13 +1582,13 @@ function renderUserBox(){
 async function renderAdminBox(){
   const box=$('missBox'),hide=()=>box.classList.add('hidden');
   const day=prevWorkday(wib().date);
-  const [d,pq]=await Promise.all([rsLoad(day,day),sb.from('input_reasons').select('*').eq('status','PENDING').order('miss_date').order('id').limit(200)]);
+  const [d,pq,lvN]=await Promise.all([rsLoad(day,day),sb.from('input_reasons').select('*').eq('status','PENDING').order('miss_date').order('id').limit(200),updateLvBadge()]);
   if(d.error||!S.me){hide();return}
   const pend=pq.error?[]:(pq.data||[]);
   pend.forEach(r=>S.rs.set(rsKey(r.member_id,r.miss_date),r));
   const miss=rsCompute(day,day,d.tasks,rsMembers()).filter(x=>!S.rs.has(rsKey(x.u.id,day)));
-  const sig=day+'|'+pend.map(r=>r.id).join(',')+'|'+miss.map(x=>x.u.id).join(',');
-  if((!pend.length&&!miss.length)||mClosed===sig){hide();return}
+  const sig=day+'|'+pend.map(r=>r.id).join(',')+'|'+miss.map(x=>x.u.id).join(',')+'|'+lvN;
+  if((!pend.length&&!miss.length&&!lvN)||mClosed===sig){hide();return}
   box.dataset.sig=sig;
   const pendH=pend.map(r=>`<div class="row" data-rsrow="1" style="gap:8px;align-items:center;margin-top:6px"><span class="tag">${esc(rsName(r.member_id))}</span><b>${esc(fmt(r.miss_date))}</b><span style="flex:1;min-width:180px">${esc(r.reason)}</span><button class="btn" data-rapp="1" data-m="${esc(String(r.member_id))}" data-d="${r.miss_date}" type="button">Setujui</button><button class="btn r" data-rrej="1" data-m="${esc(String(r.member_id))}" data-d="${r.miss_date}" type="button">Tolak</button></div>`).join('');
   const missH=miss.map(x=>`<div class="row" data-rsrow="1" style="gap:8px;align-items:center;margin-top:6px"><span class="tag ${x.u.grp==='MAGANG'?'warn':''}">${esc(x.u.name)} · ${esc(x.u.division)}${x.u.grp==='MAGANG'?' · Magang':''}</span>${S.rsOk?`<input class="rsin" maxlength="300" placeholder="Alasan (mis. sakit, izin, libur, lupa input)" style="flex:1;min-width:180px"><button class="btn" data-rsave="1" data-m="${esc(String(x.u.id))}" data-d="${day}" type="button">Simpan alasan</button>`:''}</div>`).join('');
@@ -1550,6 +1597,7 @@ async function renderAdminBox(){
   box.innerHTML=`<div class="row sp"><b>📝 Input kerjaan anggota</b>${btns}</div>`
     +(pend.length?`<div style="margin-top:6px"><b>${pend.length} alasan menunggu persetujuan</b> <span class="mut">(anggota tetap terkunci sampai disetujui)</span>${pendH}</div>`:'')
     +(miss.length?`<div style="margin-top:10px"><b>${miss.length} anggota belum input pada ${esc(fmt(day))} dan belum ada alasannya</b> <span class="mut">(alasan yang kamu tulis langsung disetujui)</span>${missH}</div>`:'');
+  if(lvN)box.innerHTML+=`<div style="margin-top:10px"><b>${lvN} pengajuan izin menunggu persetujuan</b> <button class="btn" data-mlv="1" type="button">Buka Pengajuan Izin</button></div>`;
   box.classList.remove('hidden');
 }
 async function checkMissed(){
@@ -1563,6 +1611,7 @@ async function rsClick(e){
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.mclose){mClosed=$('missBox').dataset.sig||'';$('missBox').classList.add('hidden');return}
   if(b.dataset.mrec){document.querySelector('.tabs button[data-tab="rec"]').click();return}
+  if(b.dataset.mlv){document.querySelector('.tabs button[data-tab="lv"]').click();return}
   if(b.dataset.rapp||b.dataset.rrej){
     b.disabled=true;
     try{if(await rsReview(b.dataset.m,b.dataset.d,!!b.dataset.rapp)){await checkMissed();await loadExcuse(S.from,S.to);renderDash();if(S.rec)renderRecView()}}
@@ -1644,7 +1693,7 @@ $('recNo').onchange=renderRecView;$('recUser').onchange=renderRecView;
 $('recCsv').onclick=()=>{
   const rows=recShown();
   if(!rows.length){toast('Tidak ada data untuk diunduh',1);return}
-  const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const cell=csvCell;
   const head=['Tanggal','Nama','Divisi','Grup','Alasan','Status persetujuan','Diisi oleh','Peran pengisi','Waktu diisi','Catatan admin'];
   const body=rows.map(x=>[x.date,x.u.name,x.u.division,x.u.grp==='MAGANG'?'Magang':'Internal',x.r?x.r.reason:'',x.r?ST_TAG[rsStatus(x.r)][1]:'Belum ada alasan',x.r?x.r.reason_by_name:'',x.r?(x.r.reason_by_role==='ADMIN'?'Admin':'Anggota'):'',x.r?x.r.updated_at:'',x.r&&x.r.admin_note?x.r.admin_note:'']);
   const csv='\ufeff'+[head,...body].map(r=>r.map(cell).join(',')).join('\r\n');
@@ -1653,7 +1702,7 @@ $('recCsv').onclick=()=>{
 };
 
 /* ---------- DETAIL KERJAAN PER ANGGOTA ---------- */
-const SECS=['dash','plan','upd','req','rec','sop','mem','pk','users'];
+const SECS=['dash','plan','upd','req','rec','lv','kr','sop','mem','pk','users'];
 S.mem=null;
 function dmStatus(t){
   if(t.review_status==='REJECTED')return['err','Ditolak'];
@@ -1702,6 +1751,7 @@ async function memLoad(all){
     D.tasks=r.data;D.from=from;D.to=to;D.all=!!all;
     const ex=await sb.from('input_reasons').select('member_id,miss_date').eq('member_id',String(D.u.id)).eq('status','APPROVED').gte('miss_date',from).lte('miss_date',to).limit(5000);
     if(!ex.error)(ex.data||[]).forEach(x=>S.excuse.add(rsKey(x.member_id,x.miss_date)));
+    await loadLeaves(from,to,D.u.id);
     renderMem();
   }finally{$('dmGo').disabled=false;$('dmAll').disabled=false}
 }
@@ -1723,7 +1773,7 @@ $('t-mem').addEventListener('click',e=>{const b=e.target.closest('button[data-vi
 $('dmCsv').onclick=()=>{
   const rows=dmFiltered();
   if(!rows.length){toast('Tidak ada data untuk diunduh',1);return}
-  const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const cell=csvCell;
   const head=['Tanggal','Hari','Kerjaan','Target output','Prioritas','Status','Review','Syarat bukti','Link bukti','Foto bukti','Catatan'];
   const body=rows.map(t=>{const [,lbl]=dmStatus(t);return[t.task_date,HARI[new Date(t.task_date+'T00:00:00').getDay()],t.title,t.target_output||'',t.priority,lbl,t.review_status||'',t.proof_type,t.proof_link||'',t.proof_image_path?'Ada':'',t.notes||'']});
   const csv='\ufeff'+[head,...body].map(r=>r.map(cell).join(',')).join('\r\n');
@@ -1880,6 +1930,7 @@ async function loadHolidays(){
 async function loadExcuse(from,to){
   const {data,error}=await sb.from('input_reasons').select('member_id,miss_date').eq('status','APPROVED').gte('miss_date',from).lte('miss_date',to).limit(5000);
   S.excuse=new Set(error?[]:(data||[]).map(r=>rsKey(r.member_id,r.miss_date)));
+  await loadLeaves(from,to);
 }
 /* KPI = rata-rata skor harian di semua hari efektif + bonus.
    Skor harian = min(jumlah kerjaan, target)/target x (poin beres sah / poin maksimal hari itu); hari tanpa input = 0.
@@ -1895,7 +1946,7 @@ function kpiCalc(u,from,to,tasks){
     const list=by.get(d)||[],hol=S.holidays.get(d);
     if(hol){days.push({d,kind:'hol',label:'Libur: '+hol});continue}
     if(d===td&&!list.length)continue; /* hari ini belum input: baru dinilai mulai H+1 */
-    if(!list.length&&S.excuse.has(rsKey(u.id,d))){days.push({d,kind:'exc',label:'Izin disetujui admin'});continue}
+    if(!list.length&&(S.excuse.has(rsKey(u.id,d))||leaveCovers(u.id,d))){days.push({d,kind:'exc',label:'Izin disetujui admin'});continue}
     E++;
     if(!list.length){days.push({d,kind:'eff',n:0,ok:0,score:0,extra:0});continue}
     H++;tot+=list.length;
@@ -2002,6 +2053,191 @@ $('cReset').onclick=async()=>{
   if(!confirm('Kembalikan semua pengaturan ke nilai bawaan?'))return;
   const b=$('cReset');b.disabled=true;
   try{await cfgSave({...CFG_DEF},'Pengaturan dikembalikan ke bawaan')}finally{b.disabled=false}
+};
+
+/* ---------- PENGAJUAN IZIN (sebelum hari H) ---------- */
+S.leaves=new Map();S.lvOk=true;
+const LV_KIND={IZIN:'Izin',SAKIT:'Sakit',CUTI:'Cuti'};
+async function loadLeaves(from,to,memberId){
+  const mine=!isAdmin();
+  const r=await rsPages(()=>{let q=sb.from('leave_requests').select('*').lte('from_date',to).gte('to_date',from).order('from_date').order('id');if(mine)q=q.eq('member_id',String(S.me.id));else if(memberId)q=q.eq('member_id',String(memberId));return q});
+  S.lvOk=!r.error;
+  if(r.error)return;
+  for(const [id,l] of [...S.leaves]){if(l.from_date<=to&&l.to_date>=from&&(mine||!memberId||String(l.member_id)===String(memberId)))S.leaves.delete(id)}
+  r.data.forEach(x=>S.leaves.set(x.id,x));
+}
+const leaveCovers=(mid,d)=>{for(const l of S.leaves.values()){if(l.status==='APPROVED'&&String(l.member_id)===String(mid)&&l.from_date<=d&&d<=l.to_date)return true}return false};
+function lvDays(from,to){let n=0;for(let d=from;d<=to;d=addDays(d,1))if(isWork(d))n++;return n}
+async function updateLvBadge(){
+  const b=$('lvBadge');
+  if(!S.me||!isAdmin()||!S.lvOk){b.classList.add('hidden');return 0}
+  const {count,error}=await sb.from('leave_requests').select('id',{count:'exact',head:true}).eq('status','PENDING');
+  const n=error?0:(count||0);b.textContent=n;b.classList.toggle('hidden',!n);return n;
+}
+function renderLeave(){
+  const adm=isAdmin();
+  $('lvFiltW').classList.toggle('hidden',!adm);
+  $('lvHead').innerHTML=`<tr><th>Diajukan</th>${adm?'<th>Anggota</th>':''}<th>Jenis</th><th>Tanggal</th><th>Alasan</th><th>Status</th><th></th></tr>`;
+  if(!S.lvOk){$('lvFormCard').classList.add('hidden');$('lvBody').innerHTML=`<tr><td colspan="${adm?7:6}" class="mut">Tabel pengajuan izin belum dibuat. Jalankan <b>leave_requests.sql</b> di Supabase SQL Editor.</td></tr>`;return}
+  $('lvFormCard').classList.remove('hidden');
+  const f=adm?$('lvFilt').value:'ALL',me=String(S.me.id);
+  const rows=[...S.leaves.values()].filter(l=>(adm||String(l.member_id)===me)&&(f==='ALL'||l.status===f))
+    .sort((a,b)=>b.from_date.localeCompare(a.from_date)||String(a.member_name).localeCompare(String(b.member_name)));
+  $('lvBody').innerHTML=rows.map(l=>{
+    const tg=ST_TAG[l.status]||['',l.status];
+    const dt=l.from_date===l.to_date?esc(fmt(l.from_date)):esc(fmt(l.from_date))+' s/d '+esc(fmt(l.to_date));
+    const meta=l.status!=='PENDING'&&l.reviewed_by_name?`<div class="mut">oleh ${esc(l.reviewed_by_name)}</div>`:'';
+    const note=l.status==='REJECTED'&&l.admin_note?`<div class="mut" style="color:var(--err)">Catatan admin: ${esc(l.admin_note)}</div>`:'';
+    let act='';
+    if(adm){
+      if(l.status==='PENDING')act+=`<button class="btn" data-lvapp="${esc(l.id)}" type="button">Setujui</button> <button class="btn r" data-lvrej="${esc(l.id)}" type="button">Tolak</button> `;
+      act+=`<button class="btn o" data-lvdel="${esc(l.id)}" type="button">Hapus</button>`;
+    }else if(l.status==='PENDING'&&l.from_date>wib().date)act=`<button class="btn o" data-lvdel="${esc(l.id)}" type="button">Batalkan</button>`;
+    return `<tr><td style="white-space:nowrap">${esc(rqWhen(l.created_at))}</td>${adm?`<td>${esc(l.member_name)}<div class="mut">${esc(l.division||'')}</div></td>`:''}<td>${LV_KIND[l.kind]||esc(l.kind)}</td><td style="white-space:nowrap">${dt}<div class="mut">${lvDays(l.from_date,l.to_date)} hari kerja</div></td><td style="min-width:200px">${esc(l.reason)}</td><td><span class="tag ${tg[0]}">${tg[1]}</span>${meta}${note}</td><td style="white-space:nowrap">${act}</td></tr>`;
+  }).join('')||`<tr><td colspan="${adm?7:6}" class="mut">Belum ada pengajuan izin.</td></tr>`;
+}
+async function afterLeave(){
+  await loadLeaves(MULAI_PAKAI,addDays(wib().date,400));renderLeave();
+  await loadExcuse(S.from,S.to);S.rec=null;await checkMissed();renderDash();
+}
+async function openLeave(){
+  const adm=isAdmin(),tmr=addDays(wib().date,1);
+  $('lvHint').textContent=adm
+    ?'Setujui atau tolak pengajuan izin anggota. Izin yang disetujui tidak mengurangi KPI karena harinya tidak dihitung sebagai hari efektif. Kamu juga bisa mencatat izin atas nama anggota (langsung disetujui).'
+    :'Ajukan izin sebelum hari H (paling cepat untuk besok). Setelah disetujui admin, harimu tidak dihitung sebagai hari efektif sehingga KPI tidak berkurang.';
+  $('lvMemW').classList.toggle('hidden',!adm);
+  if(adm)$('lvMem').innerHTML=S.users.filter(u=>u.role!=='ADMIN').map(u=>`<option value="${esc(String(u.id))}">${esc(u.name)} — ${esc(u.division)}</option>`).join('');
+  [$('lvFrom'),$('lvTo')].forEach(i=>{if(adm)i.removeAttribute('min');else i.min=tmr});
+  renderLeave();
+  await loadLeaves(MULAI_PAKAI,addDays(wib().date,400));
+  renderLeave();updateLvBadge();
+}
+async function lvSend(){
+  const adm=isAdmin(),td=wib().date,kind=$('lvKind').value,reason=$('lvReason').value.trim();
+  const from=$('lvFrom').value,to=$('lvTo').value||from;
+  if(!from){toast('Isi tanggal izin',1);return}
+  if(to<from){toast('Tanggal akhir sebelum tanggal awal',1);return}
+  if(!adm&&from<=td){toast('Izin harus diajukan sebelum hari H (mulai untuk besok)',1);return}
+  if((Date.parse(to)-Date.parse(from))/864e5>30){toast('Maksimal 31 hari per pengajuan',1);return}
+  if(!reason){toast('Alasan wajib diisi',1);return}
+  const mem=adm?S.users.find(u=>String(u.id)===$('lvMem').value):S.me;
+  if(!mem){toast('Pilih anggota dulu',1);return}
+  if(!lvDays(from,to)){toast('Tanggal itu bukan hari kerja (libur), tidak perlu izin',1);return}
+  if([...S.leaves.values()].some(l=>String(l.member_id)===String(mem.id)&&l.status!=='REJECTED'&&l.from_date<=to&&l.to_date>=from)){toast('Sudah ada pengajuan izin pada tanggal tersebut',1);return}
+  const now=new Date().toISOString();
+  const row={member_id:String(mem.id),member_name:mem.name,division:mem.division,kind,from_date:from,to_date:to,reason,
+    status:adm?'APPROVED':'PENDING',reviewed_by_id:adm?String(S.me.id):null,reviewed_by_name:adm?S.me.name:null,reviewed_at:adm?now:null,
+    created_by:String(S.me.id),created_by_name:S.me.name};
+  const b=$('lvSend');b.disabled=true;
+  try{
+    const {data,error}=await sb.from('leave_requests').insert(row).select();
+    if(error||!data.length){toast('Gagal mengajukan izin'+(error?': '+error.message:''),1);return}
+    $('lvReason').value='';$('lvFrom').value='';$('lvTo').value='';
+    toast(adm?'Izin dicatat dan langsung disetujui':'Izin diajukan, menunggu persetujuan admin');
+    await afterLeave();
+  }finally{b.disabled=false}
+}
+async function lvReview(id,ok){
+  let note=null;
+  if(!ok){note=prompt('Alasan penolakan (wajib diisi):');if(note===null)return;note=note.trim();if(!note){toast('Catatan penolakan wajib diisi',1);return}}
+  const {data,error}=await sb.from('leave_requests').update({status:ok?'APPROVED':'REJECTED',reviewed_by_id:String(S.me.id),reviewed_by_name:S.me.name,reviewed_at:new Date().toISOString(),admin_note:note}).eq('id',id).select();
+  if(error||!data.length){toast('Gagal memproses'+(error?': '+error.message:' (tidak punya izin)'),1);return}
+  toast(ok?'Izin disetujui: harinya tidak dihitung di KPI':'Izin ditolak');await afterLeave();
+}
+async function lvDelete(id){
+  const l=S.leaves.get(id);if(!l)return;
+  if(!confirm(isAdmin()?'Hapus pengajuan izin ini?':'Batalkan pengajuan izin ini?'))return;
+  const {data,error}=await sb.from('leave_requests').delete().eq('id',id).select();
+  if(error||!data.length){toast('Gagal menghapus'+(error?': '+error.message:' (tidak punya izin)'),1);return}
+  S.leaves.delete(id);toast('Pengajuan dihapus');await afterLeave();
+}
+$('lvSend').onclick=lvSend;
+$('lvFilt').onchange=renderLeave;
+$('t-lv').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  b.disabled=true;
+  try{
+    if(b.dataset.lvapp)await lvReview(b.dataset.lvapp,true);
+    else if(b.dataset.lvrej)await lvReview(b.dataset.lvrej,false);
+    else if(b.dataset.lvdel)await lvDelete(b.dataset.lvdel);
+  }finally{b.disabled=false}
+});
+
+/* ---------- REKAP KERJAAN SEMUA ANGGOTA (admin) ---------- */
+S.kr=null;
+const KR_LBL={DONE_OK:['ok','Done · bukti sah'],DONE_NO:['err','Done · kurang bukti'],REVIEW:['warn','Menunggu review'],PROG:['warn','In Progress'],PEND:['','Pending'],REJ:['err','Ditolak']};
+const krCat=t=>{
+  if(t.review_status==='REJECTED')return'REJ';
+  if(t.status==='Done'){if(isPend(t))return'REVIEW';return proofOk(t)?'DONE_OK':'DONE_NO'}
+  return t.status==='In Progress'?'PROG':'PEND';
+};
+const csvCell=v=>{let s=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return'"'+s.replace(/"/g,'""')+'"'};
+function proofCellH(t){
+  if(t.proof_type==='link'){
+    const l=(t.proof_link||'').trim(),h=/^https?:\/\//i.test(l)?l:'https://'+l;
+    return l?`<a href="${esc(h)}" target="_blank" rel="noopener">Buka link</a>`:'<span class="tag warn">Belum ada link</span>';
+  }
+  if(t.proof_type==='screenshot')return t.proof_image_path?`<button class="btn o" data-view="${esc(String(t.id))}" type="button">Lihat foto</button>`:'<span class="tag warn">Belum ada foto</span>';
+  return'<span class="mut">Tanpa bukti</span>';
+}
+const krUserMap=()=>new Map(S.users.map(u=>[String(u.id),u]));
+function krFiltered(){
+  const D=S.kr;if(!D)return[];
+  const u=$('krUser').value,st=$('krSt').value,um=krUserMap();
+  return D.tasks.filter(t=>(u==='ALL'||String(t.member_id)===u)&&(st==='ALL'||krCat(t)===st))
+    .sort((a,b)=>b.task_date.localeCompare(a.task_date)||String((um.get(String(a.member_id))||{}).name||'').localeCompare(String((um.get(String(b.member_id))||{}).name||'')));
+}
+function renderKr(more){
+  const D=S.kr;if(!D)return;
+  if(!more)D.shown=200;
+  const all=krFiltered(),rows=all.slice(0,D.shown),td=today(),um=krUserMap();
+  const cnt={};all.forEach(t=>{const c=krCat(t);cnt[c]=(cnt[c]||0)+1});
+  const members=new Set(all.map(t=>String(t.member_id))).size;
+  const card=(l,v,c)=>`<div><div class="mut">${l}</div><b style="font-size:22px${c?';color:'+c:''}">${v}</b></div>`;
+  $('krSum').innerHTML=`<div class="card"><div class="row" style="gap:28px">${card('Total kerjaan',all.length,'')}${card('Anggota',members,'')}${card('Done · bukti sah',cnt.DONE_OK||0,'var(--ok)')}${card('Done · kurang bukti',cnt.DONE_NO||0,cnt.DONE_NO?'var(--err)':'')}${card('Menunggu review',cnt.REVIEW||0,'')}${card('In Progress',cnt.PROG||0,'')}${card('Pending',cnt.PEND||0,'')}</div><div class="mut" style="margin-top:6px">Periode ${esc(fmt(D.from))} s/d ${esc(fmt(D.to))} · menampilkan ${rows.length} dari ${all.length} kerjaan</div></div>`;
+  $('krBody').innerHTML=rows.map(t=>{
+    const u=um.get(String(t.member_id)),[c,lbl]=KR_LBL[krCat(t)],od=t.status!=='Done'&&t.task_date<td;
+    const ago=Math.round((new Date(td+'T00:00:00Z')-new Date(t.task_date+'T00:00:00Z'))/864e5);
+    return `<tr><td style="white-space:nowrap">${esc(fmt(t.task_date))}</td><td>${u?esc(u.name):'<span class="mut">(user dihapus)</span>'}<div class="mut">${u?esc(u.division)+(u.grp==='MAGANG'?' · Magang':''):''}</div></td><td style="min-width:240px">${esc(t.title)}${t.target_output?`<div class="mut">Target: ${esc(t.target_output)}</div>`:''}</td><td>${esc(t.priority)}</td><td><span class="tag ${c}">${lbl}</span>${od?`<div class="mut" style="color:var(--err)">Tertinggal ${ago} hari</div>`:''}</td><td>${proofCellH(t)}</td><td style="min-width:140px">${esc(t.notes||'-')}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" class="mut">Tidak ada kerjaan pada filter ini.</td></tr>';
+  $('krMore').innerHTML=all.length>D.shown?`<button class="btn o" id="krMoreBtn" type="button">Tampilkan ${Math.min(200,all.length-D.shown)} lagi (${all.length-D.shown} tersisa)</button>`:'';
+}
+async function krLoad(){
+  const from=$('krFrom').value,to=$('krTo').value;
+  if(!from||!to||from>to){toast('Rentang tanggal tidak valid',1);return}
+  if((Date.parse(to)-Date.parse(from))/864e5>120){toast('Maksimal rentang 121 hari',1);return}
+  $('krGo').disabled=true;$('krSum').innerHTML='';
+  $('krBody').innerHTML='<tr><td colspan="7" class="mut">Memuat...</td></tr>';$('krMore').innerHTML='';
+  try{
+    const r=await rsPages(()=>sb.from('tasks').select('*').gte('task_date',from).lte('task_date',to).order('task_date',{ascending:false}).order('created_at',{ascending:false}).order('id'));
+    if(r.error){$('krBody').innerHTML='';toast('Gagal memuat kerjaan: '+r.error.message,1);return}
+    S.kr={tasks:r.data,from,to,shown:200};renderKr();
+  }finally{$('krGo').disabled=false}
+}
+function openKr(){
+  if(!isAdmin())return;
+  const cur=$('krUser').value||'ALL';
+  $('krUser').innerHTML='<option value="ALL">Semua anggota</option>'+S.users.filter(u=>u.role!=='ADMIN').sort((a,b)=>String(a.name).localeCompare(String(b.name))).map(u=>`<option value="${esc(String(u.id))}">${esc(u.name)} — ${esc(u.division)}${u.grp==='MAGANG'?' (Magang)':''}</option>`).join('');
+  $('krUser').value=cur;if(!$('krUser').value)$('krUser').value='ALL';
+  if(!$('krTo').value){const t=wib().date,f=addDays(t,-6);$('krTo').value=t;$('krFrom').value=f<MULAI_PAKAI?MULAI_PAKAI:f}
+  if(!S.kr)krLoad();
+}
+$('krGo').onclick=krLoad;
+$('krUser').onchange=()=>renderKr();$('krSt').onchange=()=>renderKr();
+$('t-kr').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.view)viewProof(b.dataset.view);
+  else if(b.id==='krMoreBtn'){S.kr.shown+=200;renderKr(true)}
+});
+$('krCsv').onclick=()=>{
+  const rows=krFiltered();
+  if(!rows.length){toast('Tidak ada data untuk diunduh',1);return}
+  const um=krUserMap();
+  const head=['Tanggal','Hari','Nama','Departemen','Grup','Kerjaan','Target output','Prioritas','Status','Syarat bukti','Link bukti','Foto bukti','Catatan'];
+  const body=rows.map(t=>{const u=um.get(String(t.member_id))||{};return[t.task_date,HARI[new Date(t.task_date+'T00:00:00').getDay()],u.name||'(user dihapus)',u.division||'',u.grp==='MAGANG'?'Magang':'Internal',t.title,t.target_output||'',t.priority,KR_LBL[krCat(t)][1],t.proof_type,t.proof_link||'',t.proof_image_path?'Ada':'',t.notes||'']});
+  const csv='\ufeff'+[head,...body].map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='rekap-kerjaan_'+S.kr.from+'_sd_'+S.kr.to+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
 
 /* ---------- START ---------- */
