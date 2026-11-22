@@ -324,6 +324,22 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
       <h2>Tambah departemen / jabatan baru</h2>
       <div class="row"><input id="dName" placeholder="Contoh: Content Creator" style="flex:1" /><button class="btn o" id="dAdd" type="button">Tambah departemen</button></div>
     </div>
+    <div class="card" id="cfgCard">
+      <h2>Pengaturan KPI &amp; input harian</h2>
+      <div class="mut">Perubahan langsung berlaku untuk semua anggota dan menghitung ulang KPI, rekap, serta kunci input pada seluruh periode.</div>
+      <div id="cfgWarn" class="mut hidden" style="margin-top:6px;color:var(--err)">Tabel pengaturan belum dibuat. Jalankan <b>app_settings.sql</b> di Supabase SQL Editor; sementara ini dipakai nilai bawaan.</div>
+      <div class="row" style="gap:12px;margin-top:8px;align-items:flex-end">
+        <div><label for="cMulai">Mulai dipakai</label><input type="date" id="cMulai"></div>
+        <div><label for="cJam">Batas jam input (WIB)</label><input type="time" id="cJam"></div>
+        <div><label for="cMin">Target kerjaan / hari</label><input type="number" id="cMin" min="1" max="20" step="1" style="width:90px"></div>
+        <div><label for="cBFrom">Bonus jika di atas</label><input type="number" id="cBFrom" min="1" max="50" step="1" style="width:90px"></div>
+        <div><label for="cBPct">Bonus / kerjaan (%)</label><input type="number" id="cBPct" min="0" max="10" step="0.5" style="width:90px"></div>
+        <div><label for="cBMax">Bonus maksimal (%)</label><input type="number" id="cBMax" min="0" max="50" step="1" style="width:90px"></div>
+      </div>
+      <div style="margin-top:10px"><div class="mut">Hari libur mingguan</div><div id="cLibur" style="margin-top:4px"></div></div>
+      <label style="display:inline-flex;align-items:center;gap:6px;margin:10px 0 0;cursor:pointer"><input type="checkbox" id="cLock"> Kunci input jika ada hari kosong yang alasannya belum disetujui admin</label>
+      <div class="row" style="margin-top:10px"><button class="btn" id="cSave" type="button">Simpan pengaturan</button><button class="btn o" id="cReset" type="button">Kembalikan ke bawaan</button></div>
+    </div>
     <div class="card" id="holCard">
       <h2>Hari libur &amp; cuti bersama</h2>
       <div class="mut">Tanggal di sini tidak dihitung sebagai hari efektif: tidak menurunkan KPI dan tidak mengunci input. Hari Minggu otomatis libur.</div>
@@ -447,7 +463,7 @@ async function enter(session){
   $('pMember').disabled=!isAdmin();
   $('selBar').classList.toggle('hidden',!isAdmin());
   document.body.classList.toggle('mg',!isAdmin()&&me.grp==='MAGANG');
-  await loadSop();await loadHolidays();
+  await loadCfg();await loadSop();await loadHolidays();
   rebuildPickers();
   $('bSop').textContent=isAdmin()?'Muat SOP semua departemen & anggota':'Muat SOP saya (departemen + pribadi)';
   fillSop();
@@ -1051,7 +1067,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==='rec')openRec();
   if(b.dataset.tab==='sop')openSop();
   if(b.dataset.tab==='pk')renderPk();
-  if(b.dataset.tab==='users'){renderUsers();renderHol()}
+  if(b.dataset.tab==='users'){renderUsers();renderCfg();renderHol()}
   if(b.dataset.tab==='dash')renderDash();
 });
 
@@ -1352,8 +1368,8 @@ $('bCsv').onclick=()=>{
 };
 
 /* ---------- PERINGATAN BELUM INPUT KERJAAN ---------- */
-const JAM_CEK=[9,30];      // batas jam input (WIB)
-const HARI_LIBUR=[0];      // 0=Minggu, 6=Sabtu; hari ini tidak dicek
+let JAM_CEK=[9,30];      // batas jam input (WIB)
+let HARI_LIBUR=[0];      // 0=Minggu, 6=Sabtu; hari ini tidak dicek
 document.querySelector('#app .top').insertAdjacentHTML('afterend','<div id="warnBox" class="card hidden" style="background:var(--warnb);border-color:#fde68a"></div>');
 function wib(){
   const p={};
@@ -1400,7 +1416,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkInput
 
 /* ---------- ALASAN BELUM INPUT (H+1) & REKAP ---------- */
 S.rs=new Map();S.rec=null;S.rsOk=true;
-const MULAI_PAKAI='2026-11-16'; // hari pertama platform dipakai; tanggal sebelumnya tidak dihitung
+let MULAI_PAKAI='2026-11-16'; // hari pertama platform dipakai; tanggal sebelumnya tidak dihitung
 $('warnBox').insertAdjacentHTML('afterend','<div id="missBox" class="card hidden" style="background:#fff7ed;border-color:#fed7aa"></div>');
 const rsKey=(m,d)=>String(m)+'|'+d;
 const addDays=(ds,n)=>{const [y,m,d]=ds.split('-').map(Number);return new Date(Date.UTC(y,m-1,d+n)).toISOString().slice(0,10)};
@@ -1480,7 +1496,7 @@ const rsName=id=>{const u=S.users.find(x=>String(x.id)===String(id));return u?u.
 /* Hari kerja sejak MULAI_PAKAI sampai kemarin yang kosong dan belum disetujui admin = input terkunci */
 async function lockRefresh(){
   S.lockAt=Date.now();
-  if(!S.me||isAdmin()){S.lock={locked:false,days:[]};return S.lock}
+  if(!S.me||isAdmin()||!S.cfg.lockOn){S.lock={locked:false,days:[]};return S.lock}
   const yday=addDays(wib().date,-1);
   if(yday<MULAI_PAKAI){S.lock={locked:false,days:[]};return S.lock}
   const d=await rsLoad(MULAI_PAKAI,yday);
@@ -1561,8 +1577,8 @@ async function rsClick(e){
 }
 $('missBox').addEventListener('click',rsClick);
 $('t-rec').addEventListener('click',rsClick);
-setInterval(checkMissed,300000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.me)checkMissed()});
+setInterval(tick,300000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.me)tick()});
 
 /* --- Tab Rekap --- */
 function recRows(){
@@ -1657,9 +1673,9 @@ function renderMem(){
   const stat=[['Skor KPI',kc.kpi===null?'—':kc.kpi+'%',''],['Hari masuk',kc.H+' / '+kc.E+' hari efektif',''],['Rata-rata kerjaan/hari',kc.avg.toFixed(1),''],['Bonus','+'+kc.bonus+'%',kc.bonus?'var(--ok)':''],['Total kerjaan',m.total,''],['Beres sah',m.ok,'var(--ok)'],['Kurang bukti',m.no,m.no?'var(--err)':''],['Sisa',m.prog+m.pend,'']];
   const dayRows=[...kc.days].reverse().map(x=>x.kind!=='eff'
     ?`<tr style="opacity:.7"><td>${esc(fmt(x.d))}</td><td colspan="5" class="mut">${esc(x.label)} (tidak dihitung)</td></tr>`
-    :`<tr><td>${esc(fmt(x.d))}</td><td>${x.n===0?'<span class="tag err">Tidak input</span>':x.n<4?'<span class="tag warn">Kurang dari 4</span>':x.extra?'<span class="tag ok">Bonus</span>':'<span class="tag ok">Memenuhi</span>'}</td><td>${x.n}</td><td>${x.ok}</td><td>${Math.round((x.score||0)*100)}%</td><td>${x.extra?'+'+x.extra+'%':'-'}</td></tr>`).join('');
+    :`<tr><td>${esc(fmt(x.d))}</td><td>${x.n===0?'<span class="tag err">Tidak input</span>':x.n<S.cfg.minTasks?'<span class="tag warn">Kurang dari '+S.cfg.minTasks+'</span>':x.extra?'<span class="tag ok">Bonus</span>':'<span class="tag ok">Memenuhi</span>'}</td><td>${x.n}</td><td>${x.ok}</td><td>${Math.round((x.score||0)*100)}%</td><td>${x.extra?'+'+(Math.round(x.extra*S.cfg.bonusPct*10)/10)+'%':'-'}</td></tr>`).join('');
   $('dmSum').innerHTML='<div class="card"><div class="row" style="gap:28px">'+stat.map(([l,v,c])=>`<div><div class="mut">${l}</div><b style="font-size:22px${c?';color:'+c:''}">${v}</b></div>`).join('')+`</div><div class="mut" style="margin-top:6px">${D.all?'Semua waktu':'Periode '+esc(fmt(D.from))+' s/d '+esc(fmt(D.to))} · menampilkan ${rows.length} dari ${D.tasks.length} kerjaan</div></div>`
-    +`<details class="card"><summary style="cursor:pointer"><b>Rincian KPI harian</b> <span class="mut">(klik untuk membuka)</span></summary><div class="mut" style="margin:8px 0">KPI = rata-rata skor harian di semua hari efektif + bonus (maks +10%). Skor harian = min(jumlah kerjaan, 4) ÷ 4 × persentase kerjaan beres sah; hari tanpa input bernilai 0. Bonus +1% untuk tiap kerjaan beres sah di atas 5 dalam sehari. Hari libur dan izin yang disetujui admin tidak dihitung.</div><div style="overflow-x:auto;max-height:360px"><table><thead><tr><th>Tanggal</th><th>Penilaian</th><th>Kerjaan</th><th>Beres sah</th><th>Skor hari</th><th>Bonus</th></tr></thead><tbody>${dayRows||'<tr><td colspan="6" class="mut">Belum ada hari efektif pada periode ini.</td></tr>'}</tbody></table></div></details>`;
+    +`<details class="card"><summary style="cursor:pointer"><b>Rincian KPI harian</b> <span class="mut">(klik untuk membuka)</span></summary><div class="mut" style="margin:8px 0">KPI = rata-rata skor harian di semua hari efektif + bonus (maks +${S.cfg.bonusMax}%). Skor harian = min(jumlah kerjaan, ${S.cfg.minTasks}) ÷ ${S.cfg.minTasks} × persentase kerjaan beres sah; hari tanpa input bernilai 0. Bonus +${S.cfg.bonusPct}% untuk tiap kerjaan beres sah di atas ${S.cfg.bonusFrom} dalam sehari. Hari libur dan izin yang disetujui admin tidak dihitung.</div><div style="overflow-x:auto;max-height:360px"><table><thead><tr><th>Tanggal</th><th>Penilaian</th><th>Kerjaan</th><th>Beres sah</th><th>Skor hari</th><th>Bonus</th></tr></thead><tbody>${dayRows||'<tr><td colspan="6" class="mut">Belum ada hari efektif pada periode ini.</td></tr>'}</tbody></table></div></details>`;
   const rowH=t=>{
     const [c,lbl]=dmStatus(t),od=t.status!=='Done'&&t.task_date<td;
     const ago=Math.round((new Date(td+'T00:00:00Z')-new Date(t.task_date+'T00:00:00Z'))/864e5);
@@ -1866,10 +1882,10 @@ async function loadExcuse(from,to){
   S.excuse=new Set(error?[]:(data||[]).map(r=>rsKey(r.member_id,r.miss_date)));
 }
 /* KPI = rata-rata skor harian di semua hari efektif + bonus.
-   Skor harian = min(jumlah kerjaan, 4)/4 x (poin beres sah / poin maksimal hari itu); hari tanpa input = 0.
-   Bonus = +1% per kerjaan beres sah di atas 5 dalam sehari, maksimal +10%. */
+   Skor harian = min(jumlah kerjaan, target)/target x (poin beres sah / poin maksimal hari itu); hari tanpa input = 0.
+   Bonus = bonusPct per kerjaan beres sah di atas bonusFrom dalam sehari, maksimal bonusMax. Semua nilai dari S.cfg (diatur admin). */
 function kpiCalc(u,from,to,tasks){
-  const td=wib().date,start=from<MULAI_PAKAI?MULAI_PAKAI:from,last=to<td?to:td,cs=rsStart(u);
+  const C=S.cfg,td=wib().date,start=from<MULAI_PAKAI?MULAI_PAKAI:from,last=to<td?to:td,cs=rsStart(u);
   const by=new Map();
   for(const t of tasks){if(!by.has(t.task_date))by.set(t.task_date,[]);by.get(t.task_date).push(t)}
   const days=[];let E=0,H=0,sum=0,extra=0,tot=0;
@@ -1883,11 +1899,11 @@ function kpiCalc(u,from,to,tasks){
     E++;
     if(!list.length){days.push({d,kind:'eff',n:0,ok:0,score:0,extra:0});continue}
     H++;tot+=list.length;
-    const mm=metrics(list),q=mm.max?mm.pts/mm.max:0,sc=Math.min(list.length,4)/4*q;
-    const okN=list.filter(t=>t.status==='Done'&&!isPend(t)&&proofOk(t)).length,ex=Math.max(0,okN-5);
+    const mm=metrics(list),q=mm.max?mm.pts/mm.max:0,sc=Math.min(list.length,C.minTasks)/C.minTasks*q;
+    const okN=list.filter(t=>t.status==='Done'&&!isPend(t)&&proofOk(t)).length,ex=Math.max(0,okN-C.bonusFrom);
     sum+=sc;extra+=ex;days.push({d,kind:'eff',n:list.length,ok:okN,score:sc,extra:ex});
   }
-  const base=E?sum/E*100:0,bonus=E?Math.min(10,extra):0;
+  const base=E?sum/E*100:0,bonus=E?Math.round(Math.min(C.bonusMax,extra*C.bonusPct)*10)/10:0;
   return{E,H,tot,avg:H?tot/H:0,base,bonus,kpi:E?Math.round(base+bonus):null,days};
 }
 function kpiOverall(kp){
@@ -1928,6 +1944,65 @@ $('hList').addEventListener('click',async e=>{
   if(error||!data.length){toast('Gagal menghapus'+(error?': '+error.message:''),1);return}
   toast('Hari libur dihapus');await holChanged();
 });
+
+/* ---------- PENGATURAN (diatur admin) ---------- */
+const CFG_DEF={minTasks:4,bonusFrom:5,bonusPct:1,bonusMax:10,lockOn:true,mulai:'2026-11-16',jam:'09:30',libur:[0]};
+S.cfg={...CFG_DEF};S.cfgOk=true;
+function applyCfg(c){
+  const x={...CFG_DEF,...(c||{})};
+  if(!Array.isArray(x.libur))x.libur=CFG_DEF.libur.slice();
+  S.cfg=x;MULAI_PAKAI=x.mulai;HARI_LIBUR=x.libur.slice();
+  const [h,m]=String(x.jam).split(':').map(Number);JAM_CEK=[isFinite(h)?h:9,isFinite(m)?m:30];
+}
+async function loadCfg(){
+  const {data,error}=await sb.from('app_settings').select('value').eq('key','main').maybeSingle();
+  S.cfgOk=!error;
+  applyCfg(!error&&data?data.value:null);
+}
+async function refreshCfg(){
+  const snap=()=>JSON.stringify([S.cfg,[...S.holidays]]);
+  const a=snap();await loadCfg();await loadHolidays();return a!==snap();
+}
+async function tick(){
+  if(!S.me)return;
+  const changed=await refreshCfg();
+  await checkMissed();
+  if(changed){S.rec=null;renderDash()}
+}
+function renderCfg(){
+  if(!isAdmin())return;
+  const c=S.cfg;
+  $('cMulai').value=c.mulai;$('cJam').value=c.jam;$('cMin').value=c.minTasks;
+  $('cBFrom').value=c.bonusFrom;$('cBPct').value=c.bonusPct;$('cBMax').value=c.bonusMax;$('cLock').checked=!!c.lockOn;
+  $('cLibur').innerHTML=HARI.map((n,i)=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:0 12px 0 0;cursor:pointer"><input type="checkbox" data-cl="${i}"${c.libur.includes(i)?' checked':''}> ${esc(n)}</label>`).join('');
+  $('cfgWarn').classList.toggle('hidden',S.cfgOk);
+}
+async function cfgSave(v,okMsg){
+  const {data,error}=await sb.from('app_settings').upsert({key:'main',value:v,updated_by_name:S.me.name,updated_at:new Date().toISOString()},{onConflict:'key'}).select();
+  if(error||!data.length){toast('Gagal menyimpan pengaturan'+(error?': '+error.message:'')+(error&&/app_settings/i.test(error.message)?' (jalankan app_settings.sql di Supabase)':''),1);return false}
+  S.cfgOk=true;applyCfg(v);renderCfg();S.rec=null;
+  await loadExcuse(S.from,S.to);await checkMissed();renderDash();
+  toast(okMsg);return true;
+}
+$('cSave').onclick=async()=>{
+  const n=id=>Number($(id).value);
+  const v={mulai:$('cMulai').value,jam:$('cJam').value,minTasks:Math.round(n('cMin')),bonusFrom:Math.round(n('cBFrom')),bonusPct:n('cBPct'),bonusMax:n('cBMax'),lockOn:$('cLock').checked,
+    libur:[...document.querySelectorAll('#cLibur input:checked')].map(x=>Number(x.dataset.cl))};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(v.mulai)){toast('Isi tanggal mulai dipakai',1);return}
+  if(!/^\d{2}:\d{2}$/.test(v.jam)){toast('Isi batas jam input',1);return}
+  if(!(v.minTasks>=1&&v.minTasks<=20)){toast('Target kerjaan per hari harus 1 sampai 20',1);return}
+  if(!(v.bonusFrom>=v.minTasks&&v.bonusFrom<=50)){toast('Ambang bonus minimal sama dengan target kerjaan per hari',1);return}
+  if(!(v.bonusPct>=0&&v.bonusPct<=10)){toast('Bonus per kerjaan harus 0 sampai 10%',1);return}
+  if(!(v.bonusMax>=0&&v.bonusMax<=50)){toast('Bonus maksimal harus 0 sampai 50%',1);return}
+  if(v.libur.length>6){toast('Minimal ada satu hari kerja dalam seminggu',1);return}
+  const b=$('cSave');b.disabled=true;
+  try{await cfgSave(v,'Pengaturan disimpan, KPI dihitung ulang')}finally{b.disabled=false}
+};
+$('cReset').onclick=async()=>{
+  if(!confirm('Kembalikan semua pengaturan ke nilai bawaan?'))return;
+  const b=$('cReset');b.disabled=true;
+  try{await cfgSave({...CFG_DEF},'Pengaturan dikembalikan ke bawaan')}finally{b.disabled=false}
+};
 
 /* ---------- START ---------- */
 (async()=>{
