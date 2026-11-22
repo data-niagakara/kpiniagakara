@@ -96,6 +96,13 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
 .pkc:hover{border-color:var(--brand);box-shadow:0 4px 12px rgba(79,70,229,.15)}
 .pkl .row{padding:9px 0;border-bottom:1px solid var(--line)}.pkl .row:last-child{border-bottom:0}
 .pkl a{color:var(--brand);font-weight:600;white-space:nowrap}
+.krt{table-layout:fixed;min-width:880px}
+.krt th,.krt td{vertical-align:top;white-space:normal;overflow-wrap:anywhere;word-break:break-word;padding:10px 12px;line-height:1.5}
+.krt td.wrap{white-space:pre-line}
+.krt tbody tr:nth-child(even){background:rgba(100,116,139,.045)}
+.krt tbody tr:hover{background:rgba(79,70,229,.06)}
+.krt .tag{display:inline-block;white-space:normal}
+.krt .btn{white-space:nowrap}
 .lnk{background:none;border:0;padding:0;font:inherit;color:var(--brand);cursor:pointer;text-align:left;text-decoration:underline dotted;text-underline-offset:3px}
 </style>
 </head>
@@ -295,7 +302,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     </div>
     <div id="dmSum"></div>
     <div class="card" style="overflow-x:auto">
-      <table><thead><tr><th>Tanggal</th><th>Kerjaan</th><th>Prioritas</th><th>Status / progress</th><th>Bukti</th><th>Catatan</th></tr></thead><tbody id="dmBody"></tbody></table>
+      <table class="krt"><colgroup><col style="width:12%"><col style="width:33%"><col style="width:9%"><col style="width:16%"><col style="width:12%"><col style="width:18%"></colgroup><thead><tr><th>Tanggal</th><th>Kerjaan</th><th>Prioritas</th><th>Status / progress</th><th>Bukti</th><th>Catatan</th></tr></thead><tbody id="dmBody"></tbody></table>
     </div>
   </section>
 
@@ -334,7 +341,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     </div>
     <div id="krSum"></div>
     <div class="card" style="overflow-x:auto">
-      <table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kerjaan</th><th>Prioritas</th><th>Status</th><th>Bukti</th><th>Catatan</th></tr></thead><tbody id="krBody"></tbody></table>
+      <table class="krt"><colgroup><col style="width:11%"><col style="width:15%"><col style="width:30%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:12%"></colgroup><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kerjaan</th><th>Prioritas</th><th>Status</th><th>Bukti</th><th>Catatan</th></tr></thead><tbody id="krBody"></tbody></table>
       <div id="krMore" style="margin-top:10px"></div>
     </div>
   </section>
@@ -1735,7 +1742,7 @@ function renderMem(){
     }else if(t.proof_type==='screenshot'){
       bukti=t.proof_image_path?`<button class="btn o" data-view="${esc(String(t.id))}" type="button">Lihat foto</button>`:'<span class="tag warn">Belum ada foto</span>';
     }else bukti='<span class="mut">Tanpa bukti</span>';
-    return `<tr><td style="white-space:nowrap">${esc(fmt(t.task_date))}</td><td style="min-width:240px">${esc(t.title)}${t.target_output?`<div class="mut">Target: ${esc(t.target_output)}</div>`:''}</td><td>${esc(t.priority)}</td><td><span class="tag ${c}">${lbl}</span>${od?`<div class="mut" style="color:var(--err)">Tertinggal ${ago} hari</div>`:''}</td><td>${bukti}</td><td style="min-width:160px">${esc(t.notes||'-')}</td></tr>`;
+    return `<tr><td>${fmtStack(t.task_date)}</td><td class="wrap">${esc(t.title)}${t.target_output?`<div class="mut">Target: ${esc(t.target_output)}</div>`:''}</td><td>${esc(t.priority)}</td><td><span class="tag ${c}">${lbl}</span>${od?`<div class="mut" style="color:var(--err)">Tertinggal ${ago} hari</div>`:''}</td><td>${bukti}</td><td class="wrap">${esc(t.notes||'-')}</td></tr>`;
   };
   $('dmBody').innerHTML=rows.map(rowH).join('')||'<tr><td colspan="6" class="mut">Tidak ada kerjaan pada filter ini.</td></tr>';
 }
@@ -2180,6 +2187,7 @@ function proofCellH(t){
   if(t.proof_type==='screenshot')return t.proof_image_path?`<button class="btn o" data-view="${esc(String(t.id))}" type="button">Lihat foto</button>`:'<span class="tag warn">Belum ada foto</span>';
   return'<span class="mut">Tanpa bukti</span>';
 }
+const fmtStack=s=>{const [y,m,d]=s.split('-').map(Number);return`<b>${HARI[new Date(y,m-1,d).getDay()]}</b><div class="mut">${pad(d)} ${BLN[m-1]} ${y}</div>`};
 const krUserMap=()=>new Map(S.users.map(u=>[String(u.id),u]));
 function krFiltered(){
   const D=S.kr;if(!D)return[];
@@ -2198,7 +2206,7 @@ function renderKr(more){
   $('krBody').innerHTML=rows.map(t=>{
     const u=um.get(String(t.member_id)),[c,lbl]=KR_LBL[krCat(t)],od=t.status!=='Done'&&t.task_date<td;
     const ago=Math.round((new Date(td+'T00:00:00Z')-new Date(t.task_date+'T00:00:00Z'))/864e5);
-    return `<tr><td style="white-space:nowrap">${esc(fmt(t.task_date))}</td><td>${u?esc(u.name):'<span class="mut">(user dihapus)</span>'}<div class="mut">${u?esc(u.division)+(u.grp==='MAGANG'?' · Magang':''):''}</div></td><td style="min-width:240px">${esc(t.title)}${t.target_output?`<div class="mut">Target: ${esc(t.target_output)}</div>`:''}</td><td>${esc(t.priority)}</td><td><span class="tag ${c}">${lbl}</span>${od?`<div class="mut" style="color:var(--err)">Tertinggal ${ago} hari</div>`:''}</td><td>${proofCellH(t)}</td><td style="min-width:140px">${esc(t.notes||'-')}</td></tr>`;
+    return `<tr><td>${fmtStack(t.task_date)}</td><td>${u?esc(u.name):'<span class="mut">(user dihapus)</span>'}<div class="mut">${u?esc(u.division)+(u.grp==='MAGANG'?' · Magang':''):''}</div></td><td class="wrap">${esc(t.title)}${t.target_output?`<div class="mut">Target: ${esc(t.target_output)}</div>`:''}</td><td>${esc(t.priority)}</td><td><span class="tag ${c}">${lbl}</span>${od?`<div class="mut" style="color:var(--err)">Tertinggal ${ago} hari</div>`:''}</td><td>${proofCellH(t)}</td><td class="wrap">${esc(t.notes||'-')}</td></tr>`;
   }).join('')||'<tr><td colspan="7" class="mut">Tidak ada kerjaan pada filter ini.</td></tr>';
   $('krMore').innerHTML=all.length>D.shown?`<button class="btn o" id="krMoreBtn" type="button">Tampilkan ${Math.min(200,all.length-D.shown)} lagi (${all.length-D.shown} tersisa)</button>`:'';
 }
