@@ -173,11 +173,12 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
     </div>
     <div class="card" style="overflow-x:auto">
       <h2>Rekap per anggota</h2>
-      <table><thead><tr><th>Nama</th><th>Dept</th><th>Total</th><th>Beres sah</th><th>Kurang bukti</th><th>Sisa</th><th style="min-width:140px">Skor KPI</th></tr></thead><tbody id="recap"></tbody></table>
+      <table><thead><tr><th>Nama</th><th>Dept</th><th>Hari masuk</th><th>Total</th><th>Beres sah</th><th>Kurang bukti</th><th>Sisa</th><th style="min-width:140px">Skor KPI</th></tr></thead><tbody id="recap"></tbody></table>
     </div>
   </section>
 
   <section id="t-plan" class="hidden">
+    <div id="lockNote" class="card hidden" style="background:var(--errb);border-color:#fecdd3">🔒 <b>Input kerjaan terkunci.</b> Kamu belum input kerjaan di hari kerja sebelumnya. Ajukan alasan di kotak merah di bagian atas, lalu tunggu persetujuan admin.</div>
     <div class="card">
       <div class="row sp"><h2>Input Rencana Kerjaan</h2><button id="bSop" class="btn o" type="button">Muat SOP saya (departemen + pribadi)</button></div>
       <form id="fAdd">
@@ -323,6 +324,17 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
       <h2>Tambah departemen / jabatan baru</h2>
       <div class="row"><input id="dName" placeholder="Contoh: Content Creator" style="flex:1" /><button class="btn o" id="dAdd" type="button">Tambah departemen</button></div>
     </div>
+    <div class="card" id="holCard">
+      <h2>Hari libur &amp; cuti bersama</h2>
+      <div class="mut">Tanggal di sini tidak dihitung sebagai hari efektif: tidak menurunkan KPI dan tidak mengunci input. Hari Minggu otomatis libur.</div>
+      <div class="row" style="gap:12px;margin-top:8px;align-items:flex-end">
+        <div><label for="hFrom">Dari</label><input type="date" id="hFrom"></div>
+        <div><label for="hTo">Sampai (opsional)</label><input type="date" id="hTo"></div>
+        <div style="flex:1;min-width:180px"><label for="hName">Keterangan</label><input id="hName" maxlength="80" placeholder="Contoh: Hari Kemerdekaan RI" style="width:100%"></div>
+        <button class="btn" id="hAdd" type="button">Tambah libur</button>
+      </div>
+      <div id="hList" style="margin-top:10px"></div>
+    </div>
     <div class="card" style="overflow-x:auto">
       <div class="row sp"><h2 style="margin:0">Daftar user</h2><input id="uSearch" placeholder="Cari nama / email / departemen" /></div>
       <table style="margin-top:8px"><thead><tr><th>Nama</th><th>Email</th><th>Departemen</th><th>Grup</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="uBody"></tbody></table>
@@ -435,7 +447,7 @@ async function enter(session){
   $('pMember').disabled=!isAdmin();
   $('selBar').classList.toggle('hidden',!isAdmin());
   document.body.classList.toggle('mg',!isAdmin()&&me.grp==='MAGANG');
-  await loadSop();
+  await loadSop();await loadHolidays();
   rebuildPickers();
   $('bSop').textContent=isAdmin()?'Muat SOP semua departemen & anggota':'Muat SOP saya (departemen + pribadi)';
   fillSop();
@@ -443,7 +455,7 @@ async function enter(session){
   checkInput();
   initRequests();
   S.rs=new Map();S.rec=null;$('recTo').value='';$('recFrom').value='';
-  checkMissed();
+  await checkMissed();
 }
 
 /* ---------- DATA ---------- */
@@ -481,6 +493,7 @@ async function loadTasks(){
     .order('task_date',{ascending:true}).limit(1000));
   const {data:cd,error:ce}=await cq;
   if(ce)toast('Gagal memuat kerjaan tertinggal: '+ce.message,1);
+  await loadExcuse(S.from,S.to);
   S.tasks=data;S.carry=ce?[]:(cd||[]);S.carryKeep=new Set();render();
 }
 const findT=id=>S.tasks.find(t=>t.id===id)||S.carry.find(t=>t.id===id)||((S.mem&&S.mem.tasks)||[]).find(t=>t.id===id);
@@ -498,6 +511,7 @@ function mk(m,d,title,proof,prio,hint){
     member_id:m.id,category:m.division,title,priority:prio,proof_type:proof,target_output:hint||'',status:'In Progress',is_locked:false};
 }
 async function addRows(rows,d){
+  if(!await lockGate())return false;
   const {error}=await sb.from('tasks').insert(rows);
   if(error){toast('Gagal menambah: '+error.message,1);return false}
   if(d<S.from){S.from=d;$('fromD').value=d}
@@ -529,12 +543,17 @@ const pct=(a,b)=>b?Math.round(a/b*100):0;
 let bar=null,pie=null;
 function renderDash(){
   const m=metrics(S.tasks),done=m.ok+m.no;
-  $('kScore').textContent=m.kpi+'%';$('kPts').textContent=m.pts+' dari '+m.max+' poin bobot';
-  const g=m.kpi>=85?['Excellent','ok']:m.kpi>=70?['On Track','warn']:['Evaluasi','err'];
+  const members=(isAdmin()?staffList():[S.me]).filter(u=>S.uid==='ALL'||u.id===S.uid);
+  const st=members.map(u=>metrics(S.tasks.filter(t=>t.member_id===u.id)));
+  const kp=members.map(u=>kpiCalc(u,S.from,S.to,S.tasks.filter(t=>t.member_id===u.id)));
+  const ov=kpiOverall(kp),K=ov.kpi===null?0:ov.kpi;
+  $('kScore').textContent=ov.kpi===null?'—':K+'%';
+  $('kPts').textContent=ov.kpi===null?'Belum ada hari efektif yang dinilai pada periode ini':'Hari masuk '+ov.H+' dari '+ov.E+' hari efektif · rata-rata '+ov.avg.toFixed(1)+' kerjaan/hari · bonus +'+ov.bonus+'%'+(members.length>1?' (rata-rata '+ov.n+' anggota)':'');
+  const g=ov.kpi===null?['-','']:K>=85?['Excellent','ok']:K>=70?['On Track','warn']:['Evaluasi','err'];
   $('kGrade').textContent=g[0];$('kGrade').className='tag '+g[1];
-  $('needle').style.transform='rotate('+(-90+Math.min(100,m.kpi)*1.8)+'deg)';
-  const arc=$('odoArc');arc.setAttribute('stroke-dasharray',m.kpi+' 100');
-  arc.setAttribute('stroke',m.kpi>=85?'#10b981':m.kpi>=70?'#4f46e5':'#f43f5e');
+  $('needle').style.transform='rotate('+(-90+Math.min(100,K)*1.8)+'deg)';
+  const arc=$('odoArc');arc.setAttribute('stroke-dasharray',Math.min(100,K)+' 100');
+  arc.setAttribute('stroke',K>=85?'#10b981':K>=70?'#4f46e5':'#f43f5e');
   $('kProof').textContent=(done?Math.round(m.ok/done*100):100)+'%';
   $('revN').textContent=m.rev;$('revBox').classList.toggle('hidden',!(isAdmin()&&m.rev>0));$('kTotal').textContent=m.total;$('kLock').textContent=S.tasks.filter(t=>t.is_locked).length+' sudah dikunci';
   $('kDone').textContent=done;$('kDoneSub').textContent=pct(done,m.total)+'% selesai · '+m.no+' kurang bukti'+(m.rev?' · '+m.rev+' menunggu review':'');
@@ -542,20 +561,19 @@ function renderDash(){
   const cN=carryOpenRows().length;
   $('kPend').textContent=m.pend+cN;
   $('kPendSub').textContent=m.pend+' pending · '+(m.over+cN)+' tertinggal dari hari lalu'+(cN?' ('+cN+' dari sebelum periode)':'');
-  const members=(isAdmin()?staffList():[S.me]).filter(u=>S.uid==='ALL'||u.id===S.uid);
-  const st=members.map(u=>metrics(S.tasks.filter(t=>t.member_id===u.id)));
   $('recap').innerHTML=members.map((u,i)=>{
-    const s=st[i],c=s.kpi>=85?'#10b981':s.kpi>=70?'#6366f1':'#f59e0b';
-    return `<tr><td><button class="lnk" data-mem="${esc(String(u.id))}" type="button" title="Lihat semua kerjaan"><b>${esc(u.name)}</b></button></td><td>${esc(u.division)}${u.grp==='MAGANG'?' <span class="tag warn">Magang</span>':''}</td><td>${s.total}</td><td>${s.ok}</td><td>${s.no}</td><td>${s.prog+s.pend}</td>
-      <td><b>${s.kpi}%</b><div class="bar"><i style="width:${s.kpi}%;background:${c}"></i></div></td></tr>`;
-  }).join('')||'<tr><td colspan="7" class="mut">Belum ada data.</td></tr>';
+    const s=st[i],k=kp[i],kv=k.kpi===null?0:k.kpi,c=kv>=85?'#10b981':kv>=70?'#6366f1':'#f59e0b';
+    return `<tr><td><button class="lnk" data-mem="${esc(String(u.id))}" type="button" title="Lihat semua kerjaan"><b>${esc(u.name)}</b></button></td><td>${esc(u.division)}${u.grp==='MAGANG'?' <span class="tag warn">Magang</span>':''}</td><td>${k.H}/${k.E}</td><td>${s.total}</td><td>${s.ok}</td><td>${s.no}</td><td>${s.prog+s.pend}</td>
+      <td title="Dasar ${Math.round(k.base)}% + bonus ${k.bonus}%"><b>${k.kpi===null?'—':k.kpi+'%'}</b>${k.bonus?` <span class="tag ok">+${k.bonus}%</span>`:''}<div class="bar"><i style="width:${Math.min(100,kv)}%;background:${c}"></i></div></td></tr>`;
+  }).join('')||'<tr><td colspan="8" class="mut">Belum ada data.</td></tr>';
+
   if(!window.Chart)return;
   if(bar)bar.destroy();if(pie)pie.destroy();
   bar=new Chart($('cBar'),{type:'bar',data:{labels:members.map(u=>u.name.split(' ').slice(0,2).join(' ')),datasets:[
-    {label:'Skor KPI (%)',data:st.map(s=>s.kpi),backgroundColor:'#6366f1',borderRadius:10,borderSkipped:false},
+    {label:'Skor KPI (%)',data:kp.map(k=>k.kpi===null?0:k.kpi),backgroundColor:'#6366f1',borderRadius:10,borderSkipped:false},
     {label:'Penyelesaian (%)',data:st.map(s=>pct(s.ok+s.no,s.total)),backgroundColor:'#10b981',borderRadius:10,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10}}},
-      scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
+      scales:{y:{beginAtZero:true,max:110,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
   const cnt=[m.ok,m.no,m.rev,m.prog,m.pend],has=cnt.some(v=>v>0);
   pie=new Chart($('cPie'),{type:'doughnut',data:{labels:['Done sah','Done kurang bukti','Menunggu review','In Progress','Pending'],datasets:[{
     data:has?cnt:[1,0,0,0,0],backgroundColor:has?['#10b981','#f43f5e','#38bdf8','#f59e0b','#94a3b8']:['#e2e8f0','#e2e8f0','#e2e8f0','#e2e8f0','#e2e8f0'],borderWidth:3,borderColor:'#fff'}]},
@@ -779,6 +797,7 @@ async function rqUpd(id,f,cond){
 }
 async function rqAssign(id){
   const r=S.req.get(id);if(!r)return;
+  if(!await lockGate())return;
   const got=await rqUpd(id,{status:'ASSIGNED',assigned_to:meId(),assigned_name:S.me.name,assigned_at:new Date().toISOString()},{status:'OPEN'});
   if(!got)return;
   const task=mk(S.me,today(),'Request: '+r.title,'none','Medium','Dari '+r.from_name+' ('+r.from_dept+')'+(r.description?' - '+r.description:''));
@@ -1032,7 +1051,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==='rec')openRec();
   if(b.dataset.tab==='sop')openSop();
   if(b.dataset.tab==='pk')renderPk();
-  if(b.dataset.tab==='users')renderUsers();
+  if(b.dataset.tab==='users'){renderUsers();renderHol()}
   if(b.dataset.tab==='dash')renderDash();
 });
 
@@ -1348,7 +1367,7 @@ async function checkInput(){
   if(!S.me){hide();return}
   const n=wib();
   const late=n.h>JAM_CEK[0]||(n.h===JAM_CEK[0]&&n.m>=JAM_CEK[1]);
-  if(!late||HARI_LIBUR.includes(n.wd)){hide();return}
+  if(!late||HARI_LIBUR.includes(n.wd)||(S.holidays&&S.holidays.has(n.date))){hide();return}
   const {data,error}=await sb.from('tasks').select('member_id').eq('task_date',n.date).limit(5000);
   if(error||!S.me)return;
   const has=new Set(data.map(x=>x.member_id));
@@ -1386,8 +1405,8 @@ $('warnBox').insertAdjacentHTML('afterend','<div id="missBox" class="card hidden
 const rsKey=(m,d)=>String(m)+'|'+d;
 const addDays=(ds,n)=>{const [y,m,d]=ds.split('-').map(Number);return new Date(Date.UTC(y,m-1,d+n)).toISOString().slice(0,10)};
 const wdOf=ds=>{const [y,m,d]=ds.split('-').map(Number);return new Date(Date.UTC(y,m-1,d)).getUTCDay()};
-const isWork=ds=>!HARI_LIBUR.includes(wdOf(ds));
-function prevWorkday(ds){let d=addDays(ds,-1);for(let i=0;i<7&&!isWork(d);i++)d=addDays(d,-1);return d}
+const isWork=ds=>!HARI_LIBUR.includes(wdOf(ds))&&!(S.holidays&&S.holidays.has(ds));
+function prevWorkday(ds){let d=addDays(ds,-1);for(let i=0;i<31&&!isWork(d);i++)d=addDays(d,-1);return d}
 const jktDate=iso=>iso?new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date(iso)):null;
 const rsStart=u=>jktDate(u.created_at||u.joined_at||null);
 const rsMembers=()=>isAdmin()?S.users.filter(u=>u.role!=='ADMIN'):[S.me];
@@ -1427,43 +1446,117 @@ function rsCompute(from,to,tasks,members){
 async function rsSave(m,d,reason){
   reason=String(reason||'').trim();
   if(!reason){toast('Alasan wajib diisi',1);return false}
-  const row={member_id:String(m),miss_date:d,reason,reason_by_id:String(S.me.id),reason_by_name:S.me.name,reason_by_role:isAdmin()?'ADMIN':'MEMBER',updated_at:new Date().toISOString()};
+  const adm=isAdmin(),now=new Date().toISOString();
+  const row={member_id:String(m),miss_date:d,reason,reason_by_id:String(S.me.id),reason_by_name:S.me.name,reason_by_role:adm?'ADMIN':'MEMBER',updated_at:now,
+    status:adm?'APPROVED':'PENDING',reviewed_by_id:adm?String(S.me.id):null,reviewed_by_name:adm?S.me.name:null,reviewed_at:adm?now:null,admin_note:null};
   const {data,error}=await sb.from('input_reasons').upsert(row,{onConflict:'member_id,miss_date'}).select();
-  if(error||!data||!data.length){toast('Gagal menyimpan alasan'+(error?': '+error.message:''),1);return false}
-  S.rs.set(rsKey(m,d),data[0]);toast('Alasan tersimpan');return true;
+  if(error||!data||!data.length){
+    const hint=error&&/status|reviewed|admin_note|column/i.test(error.message)?' (jalankan input_lock.sql di Supabase)':'';
+    toast('Gagal menyimpan alasan'+(error?': '+error.message:'')+hint,1);return false;
+  }
+  S.rs.set(rsKey(m,d),data[0]);
+  toast(adm?'Alasan tersimpan':'Alasan diajukan, menunggu persetujuan admin');return true;
+}
+async function rsReview(m,d,ok){
+  let note=null;
+  if(!ok){
+    note=prompt('Alasan penolakan (wajib diisi):');if(note===null)return false;
+    note=note.trim();if(!note){toast('Catatan penolakan wajib diisi',1);return false}
+  }
+  const now=new Date().toISOString();
+  const {data,error}=await sb.from('input_reasons').update({status:ok?'APPROVED':'REJECTED',reviewed_by_id:String(S.me.id),reviewed_by_name:S.me.name,reviewed_at:now,admin_note:note,updated_at:now})
+    .eq('member_id',String(m)).eq('miss_date',d).select();
+  if(error||!data.length){toast('Gagal memproses'+(error?': '+error.message:' (tidak punya izin)'),1);return false}
+  S.rs.set(rsKey(m,d),data[0]);
+  toast(ok?'Alasan disetujui, input anggota terbuka lagi':'Alasan ditolak');return true;
 }
 
-/* --- Notifikasi H+1 --- */
+/* --- Notifikasi H+1, kunci input, dan persetujuan admin --- */
 let mClosed='';
-async function checkMissed(){
-  const box=$('missBox'),hide=()=>box.classList.add('hidden');
-  if(!S.me){hide();return}
-  const day=prevWorkday(wib().date);
-  const d=await rsLoad(day,day);
-  if(d.error||!S.me){hide();return}
-  const miss=rsCompute(day,day,d.tasks,rsMembers());
-  const list=S.rsOk?miss.filter(x=>!S.rs.has(rsKey(x.u.id,day))):miss;
-  const sig=day+'|'+list.map(x=>x.u.id).join(',');
-  if(!list.length||mClosed===sig){hide();return}
-  box.dataset.sig=sig;
-  const rowH=x=>`<div class="row" data-rsrow="1" style="gap:8px;align-items:center;margin-top:6px"><span class="tag ${x.u.grp==='MAGANG'?'warn':''}">${esc(x.u.name)} · ${esc(x.u.division)}${x.u.grp==='MAGANG'?' · Magang':''}</span>${S.rsOk?`<input class="rsin" maxlength="300" placeholder="Alasan (mis. sakit, izin, libur, lupa input)" style="flex:1;min-width:180px"><button class="btn" data-rsave="1" data-m="${esc(String(x.u.id))}" data-d="${day}" type="button">Simpan alasan</button>`:''}</div>`;
-  const note=S.rsOk?'':'<div class="mut" style="margin-top:6px">Fitur alasan belum aktif: jalankan <b>input_reasons.sql</b> di Supabase.</div>';
-  const btns='<div class="row"><button class="btn o" data-mrec="1" type="button">Lihat rekap</button><button class="btn o" data-mclose="1" type="button">Tutup</button></div>';
-  if(isAdmin()){
-    box.innerHTML=`<div class="row sp"><b>📝 ${list.length} anggota belum input kerjaan pada ${esc(fmt(day))}${S.rsOk?' dan belum ada alasannya':''}</b>${btns}</div><div class="mut">Admin bisa mengisikan alasan atas nama anggota.</div>${list.map(rowH).join('')}${note}`;
-  }else{
-    box.innerHTML=`<div class="row sp"><div><b>📝 Kamu belum input kerjaan pada ${esc(fmt(day))}</b><div class="mut">Tulis alasannya supaya tercatat di rekap (admin juga bisa mengisinya).</div></div>${btns}</div>${list.map(rowH).join('')}${note}`;
-  }
+S.lock={locked:false,days:[]};S.lockAt=0;
+const rsStatus=r=>r?(r.status||'APPROVED'):null;
+const ST_TAG={APPROVED:['ok','Disetujui'],PENDING:['warn','Menunggu persetujuan'],REJECTED:['err','Ditolak']};
+const rsName=id=>{const u=S.users.find(x=>String(x.id)===String(id));return u?u.name+' · '+u.division:'anggota'};
+/* Hari kerja sejak MULAI_PAKAI sampai kemarin yang kosong dan belum disetujui admin = input terkunci */
+async function lockRefresh(){
+  S.lockAt=Date.now();
+  if(!S.me||isAdmin()){S.lock={locked:false,days:[]};return S.lock}
+  const yday=addDays(wib().date,-1);
+  if(yday<MULAI_PAKAI){S.lock={locked:false,days:[]};return S.lock}
+  const d=await rsLoad(MULAI_PAKAI,yday);
+  if(d.error||!S.rsOk)return S.lock; /* gagal cek atau tabel belum siap: jangan mengunci */
+  const days=rsCompute(MULAI_PAKAI,yday,d.tasks,[S.me]).map(x=>({date:x.date,r:S.rs.get(rsKey(S.me.id,x.date))||null})).filter(x=>rsStatus(x.r)!=='APPROVED');
+  S.lock={locked:days.length>0,days};
+  return S.lock;
+}
+function applyLockUI(){
+  const lk=!isAdmin()&&S.lock.locked;
+  $('lockNote').classList.toggle('hidden',!lk);
+  $('fAdd').querySelectorAll('button').forEach(b=>b.disabled=lk);
+  $('bSop').disabled=lk;
+}
+async function lockGate(){
+  if(isAdmin())return true;
+  if(Date.now()-S.lockAt>5000)await lockRefresh();
+  applyLockUI();renderUserBox();
+  if(S.lock.locked){toast('Input kerjaan terkunci: ajukan alasan dan tunggu persetujuan admin',1);return false}
+  return true;
+}
+function renderUserBox(){
+  const box=$('missBox'),L=S.lock;
+  if(isAdmin())return;
+  if(!L.locked){box.classList.add('hidden');return}
+  const rowU=x=>{
+    const r=x.r,st=rsStatus(r),head=`<b>${esc(fmt(x.date))}</b>`;
+    if(st==='PENDING')return`<div style="margin-top:8px">${head} <span class="tag warn">Menunggu persetujuan admin</span><div class="mut">Alasan kamu: ${esc(r.reason)}</div></div>`;
+    const rej=st==='REJECTED'?`<div class="mut" style="color:var(--err)">Ditolak${r.reviewed_by_name?' oleh '+esc(r.reviewed_by_name):''}: ${esc(r.admin_note||'-')}. Ajukan alasan yang baru.</div>`:'';
+    return`<div data-rsrow="1" style="margin-top:8px">${head}${rej}<div class="row" style="gap:8px;margin-top:4px"><input class="rsin" maxlength="300" placeholder="Alasan (mis. sakit, izin, libur, lupa input)" style="flex:1;min-width:180px"><button class="btn" data-rsave="1" data-m="${esc(String(S.me.id))}" data-d="${x.date}" type="button">${st==='REJECTED'?'Ajukan ulang':'Ajukan alasan'}</button></div></div>`;
+  };
+  box.style.background='var(--errb)';box.style.borderColor='#fecdd3';
+  box.innerHTML=`<div class="row sp"><div><b>🔒 Input kerjaan terkunci</b><div class="mut">Kamu belum input kerjaan pada ${L.days.length} hari kerja. Ajukan alasan untuk tiap tanggal; input terbuka lagi setelah admin menyetujui.</div></div><button class="btn o" data-mrec="1" type="button">Lihat rekap</button></div><div style="max-height:300px;overflow:auto">${L.days.map(rowU).join('')}</div>`;
   box.classList.remove('hidden');
+}
+async function renderAdminBox(){
+  const box=$('missBox'),hide=()=>box.classList.add('hidden');
+  const day=prevWorkday(wib().date);
+  const [d,pq]=await Promise.all([rsLoad(day,day),sb.from('input_reasons').select('*').eq('status','PENDING').order('miss_date').order('id').limit(200)]);
+  if(d.error||!S.me){hide();return}
+  const pend=pq.error?[]:(pq.data||[]);
+  pend.forEach(r=>S.rs.set(rsKey(r.member_id,r.miss_date),r));
+  const miss=rsCompute(day,day,d.tasks,rsMembers()).filter(x=>!S.rs.has(rsKey(x.u.id,day)));
+  const sig=day+'|'+pend.map(r=>r.id).join(',')+'|'+miss.map(x=>x.u.id).join(',');
+  if((!pend.length&&!miss.length)||mClosed===sig){hide();return}
+  box.dataset.sig=sig;
+  const pendH=pend.map(r=>`<div class="row" data-rsrow="1" style="gap:8px;align-items:center;margin-top:6px"><span class="tag">${esc(rsName(r.member_id))}</span><b>${esc(fmt(r.miss_date))}</b><span style="flex:1;min-width:180px">${esc(r.reason)}</span><button class="btn" data-rapp="1" data-m="${esc(String(r.member_id))}" data-d="${r.miss_date}" type="button">Setujui</button><button class="btn r" data-rrej="1" data-m="${esc(String(r.member_id))}" data-d="${r.miss_date}" type="button">Tolak</button></div>`).join('');
+  const missH=miss.map(x=>`<div class="row" data-rsrow="1" style="gap:8px;align-items:center;margin-top:6px"><span class="tag ${x.u.grp==='MAGANG'?'warn':''}">${esc(x.u.name)} · ${esc(x.u.division)}${x.u.grp==='MAGANG'?' · Magang':''}</span>${S.rsOk?`<input class="rsin" maxlength="300" placeholder="Alasan (mis. sakit, izin, libur, lupa input)" style="flex:1;min-width:180px"><button class="btn" data-rsave="1" data-m="${esc(String(x.u.id))}" data-d="${day}" type="button">Simpan alasan</button>`:''}</div>`).join('');
+  const btns='<div class="row"><button class="btn o" data-mrec="1" type="button">Lihat rekap</button><button class="btn o" data-mclose="1" type="button">Tutup</button></div>';
+  box.style.background='#fff7ed';box.style.borderColor='#fed7aa';
+  box.innerHTML=`<div class="row sp"><b>📝 Input kerjaan anggota</b>${btns}</div>`
+    +(pend.length?`<div style="margin-top:6px"><b>${pend.length} alasan menunggu persetujuan</b> <span class="mut">(anggota tetap terkunci sampai disetujui)</span>${pendH}</div>`:'')
+    +(miss.length?`<div style="margin-top:10px"><b>${miss.length} anggota belum input pada ${esc(fmt(day))} dan belum ada alasannya</b> <span class="mut">(alasan yang kamu tulis langsung disetujui)</span>${missH}</div>`:'');
+  box.classList.remove('hidden');
+}
+async function checkMissed(){
+  const box=$('missBox');
+  if(!S.me){box.classList.add('hidden');return}
+  if(isAdmin()){await renderAdminBox();return}
+  await lockRefresh();if(!S.me)return;
+  applyLockUI();renderUserBox();
 }
 async function rsClick(e){
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.mclose){mClosed=$('missBox').dataset.sig||'';$('missBox').classList.add('hidden');return}
   if(b.dataset.mrec){document.querySelector('.tabs button[data-tab="rec"]').click();return}
+  if(b.dataset.rapp||b.dataset.rrej){
+    b.disabled=true;
+    try{if(await rsReview(b.dataset.m,b.dataset.d,!!b.dataset.rapp)){await checkMissed();await loadExcuse(S.from,S.to);renderDash();if(S.rec)renderRecView()}}
+    finally{b.disabled=false}
+    return;
+  }
   if(!b.dataset.rsave)return;
   const row=b.closest('[data-rsrow]'),inp=row&&row.querySelector('.rsin');if(!inp)return;
   b.disabled=true;
-  try{if(await rsSave(b.dataset.m,b.dataset.d,inp.value)){await checkMissed();if(S.rec)renderRecView()}}
+  try{if(await rsSave(b.dataset.m,b.dataset.d,inp.value)){await checkMissed();await loadExcuse(S.from,S.to);renderDash();if(S.rec)renderRecView()}}
   finally{b.disabled=false}
 }
 $('missBox').addEventListener('click',rsClick);
@@ -1484,17 +1577,28 @@ function renderRecView(){
   const D=S.rec;if(!D)return;
   const adm=isAdmin();
   $('recErr').classList.toggle('hidden',S.rsOk);
-  if(!S.rsOk)$('recErr').innerHTML='Tabel alasan belum siap. Jalankan <b>input_reasons.sql</b> di Supabase SQL Editor.';
-  const all=recRows(),withR=all.filter(x=>x.r).length,rows=recShown();
-  $('recSum').innerHTML=`<div class="card"><div class="row" style="gap:28px"><div><div class="mut">Hari kerja kosong</div><b style="font-size:22px">${all.length}</b></div><div><div class="mut">Sudah ada alasan</div><b style="font-size:22px;color:var(--ok)">${withR}</b></div><div><div class="mut">Belum ada alasan</div><b style="font-size:22px;color:var(--err)">${all.length-withR}</b></div></div><div class="mut" style="margin-top:6px">Periode ${esc(fmt(D.from))} s/d ${esc(fmt(D.to))} (dihitung sejak ${esc(fmt(MULAI_PAKAI))}). Hari ini tidak dihitung dan hari libur (${HARI_LIBUR.map(i=>HARI[i]).join(', ')}) dilewati.</div></div>`;
+  if(!S.rsOk)$('recErr').innerHTML='Tabel alasan belum siap. Jalankan <b>input_reasons.sql</b> dan <b>input_lock.sql</b> di Supabase SQL Editor.';
+  const all=recRows(),ap=all.filter(x=>rsStatus(x.r)==='APPROVED').length,pd=all.filter(x=>rsStatus(x.r)==='PENDING').length,open=all.length-ap-pd;
+  const rows=$('recNo').checked?all.filter(x=>!x.r):all;
+  const card=(l,v,c)=>`<div><div class="mut">${l}</div><b style="font-size:22px${c?';color:'+c:''}">${v}</b></div>`;
+  $('recSum').innerHTML=`<div class="card"><div class="row" style="gap:28px">${card('Hari kerja kosong',all.length,'')}${card('Disetujui admin',ap,'var(--ok)')}${card('Menunggu persetujuan',pd,pd?'#d97706':'')}${card('Belum ada alasan / ditolak',open,open?'var(--err)':'')}</div><div class="mut" style="margin-top:6px">Periode ${esc(fmt(D.from))} s/d ${esc(fmt(D.to))} (dihitung sejak ${esc(fmt(MULAI_PAKAI))}). Hari ini tidak dihitung dan hari libur (${HARI_LIBUR.map(i=>HARI[i]).join(', ')}) dilewati. Input terkunci selama ada hari kosong yang belum disetujui.</div></div>`;
   let per='';
   if(adm&&all.length){
     const m=new Map();
-    all.forEach(x=>{const k=String(x.u.id);if(!m.has(k))m.set(k,{u:x.u,n:0,w:0});const o=m.get(k);o.n++;if(x.r)o.w++});
-    per=`<div class="card"><h2>Per anggota</h2><div style="overflow-x:auto"><table><thead><tr><th>Nama</th><th>Divisi</th><th>Hari kosong</th><th>Ada alasan</th><th>Belum ada alasan</th></tr></thead><tbody>${[...m.values()].sort((a,b)=>b.n-a.n).map(o=>`<tr><td>${esc(o.u.name)}${o.u.grp==='MAGANG'?' <span class="tag warn">Magang</span>':''}</td><td>${esc(o.u.division)}</td><td>${o.n}</td><td>${o.w}</td><td>${o.n-o.w?`<span class="tag err">${o.n-o.w}</span>`:'0'}</td></tr>`).join('')}</tbody></table></div></div>`;
+    all.forEach(x=>{const k=String(x.u.id);if(!m.has(k))m.set(k,{u:x.u,n:0,a:0,p:0});const o=m.get(k);o.n++;const st=rsStatus(x.r);if(st==='APPROVED')o.a++;else if(st==='PENDING')o.p++});
+    per=`<div class="card"><h2>Per anggota</h2><div style="overflow-x:auto"><table><thead><tr><th>Nama</th><th>Divisi</th><th>Hari kosong</th><th>Disetujui</th><th>Menunggu</th><th>Belum beres</th></tr></thead><tbody>${[...m.values()].sort((a,b)=>(b.n-b.a)-(a.n-a.a)).map(o=>{const left=o.n-o.a-o.p;return`<tr><td>${esc(o.u.name)}${o.u.grp==='MAGANG'?' <span class="tag warn">Magang</span>':''}</td><td>${esc(o.u.division)}</td><td>${o.n}</td><td>${o.a}</td><td>${o.p||0}</td><td>${left?`<span class="tag err">${left}</span>`:'0'}</td></tr>`}).join('')}</tbody></table></div></div>`;
   }
-  const trs=rows.map(x=>`<tr data-rsrow="1"><td style="white-space:nowrap">${esc(fmt(x.date))}</td>${adm?`<td>${esc(x.u.name)}<div class="mut">${esc(x.u.division)}${x.u.grp==='MAGANG'?' · Magang':''}</div></td>`:''}<td style="min-width:260px">${S.rsOk?`<div class="row" style="gap:6px;flex-wrap:nowrap"><input class="rsin" maxlength="300" value="${esc(x.r?x.r.reason:'')}" placeholder="Tulis alasan..." style="flex:1;min-width:140px"><button class="btn${x.r?' o':''}" data-rsave="1" data-m="${esc(String(x.u.id))}" data-d="${x.date}" type="button">${x.r?'Ubah':'Simpan'}</button></div>`:''}${x.r?`<div class="mut">Diisi oleh ${rsWho(x.r)} · ${esc(rqWhen(x.r.updated_at))}</div>`:'<div class="mut" style="color:var(--err)">Belum ada alasan</div>'}</td></tr>`).join('');
-  $('recBody').innerHTML=per+`<div class="card"><h2>Detail (${rows.length})</h2><div style="overflow-x:auto"><table><thead><tr><th>Tanggal</th>${adm?'<th>Anggota</th>':''}<th>Alasan</th></tr></thead><tbody>${trs||`<tr><td colspan="${adm?3:2}" class="mut">Tidak ada data. Semua hari kerja sudah terisi 🎉</td></tr>`}</tbody></table></div></div>`;
+  const trs=rows.map(x=>{
+    const st=rsStatus(x.r),tg=st?`<span class="tag ${ST_TAG[st][0]}">${ST_TAG[st][1]}</span>`:'<span class="tag err">Belum ada alasan</span>';
+    const editable=S.rsOk&&(adm||st!=='APPROVED');
+    const lbl=adm?(x.r?'Ubah':'Simpan'):(st==='REJECTED'?'Ajukan ulang':x.r?'Ubah':'Ajukan');
+    const ed=editable?`<div class="row" style="gap:6px;flex-wrap:nowrap"><input class="rsin" maxlength="300" value="${esc(x.r?x.r.reason:'')}" placeholder="Tulis alasan..." style="flex:1;min-width:140px"><button class="btn${x.r?' o':''}" data-rsave="1" data-m="${esc(String(x.u.id))}" data-d="${x.date}" type="button">${lbl}</button></div>`:(x.r?`<div>${esc(x.r.reason)}</div>`:'');
+    const rv=adm&&(st==='PENDING'||st==='REJECTED')?`<button class="btn" data-rapp="1" data-m="${esc(String(x.u.id))}" data-d="${x.date}" type="button">Setujui</button>`+(st==='PENDING'?`<button class="btn r" data-rrej="1" data-m="${esc(String(x.u.id))}" data-d="${x.date}" type="button">Tolak</button>`:''):'';
+    const meta=x.r?`<div class="mut">Diisi oleh ${rsWho(x.r)} · ${esc(rqWhen(x.r.updated_at))}${x.r.reviewed_by_name&&st!=='PENDING'&&x.r.reviewed_by_id!==x.r.reason_by_id?' · ditinjau '+esc(x.r.reviewed_by_name):''}</div>`:'';
+    const note=st==='REJECTED'&&x.r.admin_note?`<div class="mut" style="color:var(--err)">Catatan admin: ${esc(x.r.admin_note)}</div>`:'';
+    return`<tr data-rsrow="1"><td style="white-space:nowrap">${esc(fmt(x.date))}</td>${adm?`<td>${esc(x.u.name)}<div class="mut">${esc(x.u.division)}${x.u.grp==='MAGANG'?' · Magang':''}</div></td>`:''}<td style="min-width:280px">${ed}<div class="row" style="gap:6px;margin-top:4px;align-items:center">${tg}${rv}</div>${meta}${note}</td></tr>`;
+  }).join('');
+  $('recBody').innerHTML=per+`<div class="card"><h2>Detail (${rows.length})</h2><div style="overflow-x:auto"><table><thead><tr><th>Tanggal</th>${adm?'<th>Anggota</th>':''}<th>Alasan &amp; status</th></tr></thead><tbody>${trs||`<tr><td colspan="${adm?3:2}" class="mut">Tidak ada data. Semua hari kerja sudah terisi 🎉</td></tr>`}</tbody></table></div></div>`;
 }
 async function recLoad(){
   let from=$('recFrom').value;const to=$('recTo').value;
@@ -1525,8 +1629,8 @@ $('recCsv').onclick=()=>{
   const rows=recShown();
   if(!rows.length){toast('Tidak ada data untuk diunduh',1);return}
   const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-  const head=['Tanggal','Nama','Divisi','Grup','Alasan','Diisi oleh','Peran pengisi','Waktu diisi'];
-  const body=rows.map(x=>[x.date,x.u.name,x.u.division,x.u.grp==='MAGANG'?'Magang':'Internal',x.r?x.r.reason:'',x.r?x.r.reason_by_name:'',x.r?(x.r.reason_by_role==='ADMIN'?'Admin':'Anggota'):'',x.r?x.r.updated_at:'']);
+  const head=['Tanggal','Nama','Divisi','Grup','Alasan','Status persetujuan','Diisi oleh','Peran pengisi','Waktu diisi','Catatan admin'];
+  const body=rows.map(x=>[x.date,x.u.name,x.u.division,x.u.grp==='MAGANG'?'Magang':'Internal',x.r?x.r.reason:'',x.r?ST_TAG[rsStatus(x.r)][1]:'Belum ada alasan',x.r?x.r.reason_by_name:'',x.r?(x.r.reason_by_role==='ADMIN'?'Admin':'Anggota'):'',x.r?x.r.updated_at:'',x.r&&x.r.admin_note?x.r.admin_note:'']);
   const csv='\ufeff'+[head,...body].map(r=>r.map(cell).join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   a.download='rekap-belum-input_'+S.rec.from+'_sd_'+S.rec.to+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
@@ -1549,9 +1653,13 @@ function dmFiltered(){
 }
 function renderMem(){
   const D=S.mem;if(!D)return;
-  const m=metrics(D.tasks),rows=dmFiltered(),td=today();
-  const stat=[['Total kerjaan',m.total,''],['Beres sah',m.ok,'var(--ok)'],['Kurang bukti',m.no,m.no?'var(--err)':''],['Sisa',m.prog+m.pend,''],['Skor KPI',m.kpi+'%','']];
-  $('dmSum').innerHTML='<div class="card"><div class="row" style="gap:28px">'+stat.map(([l,v,c])=>`<div><div class="mut">${l}</div><b style="font-size:22px${c?';color:'+c:''}">${v}</b></div>`).join('')+`</div><div class="mut" style="margin-top:6px">${D.all?'Semua waktu':'Periode '+esc(fmt(D.from))+' s/d '+esc(fmt(D.to))} · menampilkan ${rows.length} dari ${D.tasks.length} kerjaan</div></div>`;
+  const m=metrics(D.tasks),rows=dmFiltered(),td=today(),kc=kpiCalc(D.u,D.from,D.to,D.tasks);
+  const stat=[['Skor KPI',kc.kpi===null?'—':kc.kpi+'%',''],['Hari masuk',kc.H+' / '+kc.E+' hari efektif',''],['Rata-rata kerjaan/hari',kc.avg.toFixed(1),''],['Bonus','+'+kc.bonus+'%',kc.bonus?'var(--ok)':''],['Total kerjaan',m.total,''],['Beres sah',m.ok,'var(--ok)'],['Kurang bukti',m.no,m.no?'var(--err)':''],['Sisa',m.prog+m.pend,'']];
+  const dayRows=[...kc.days].reverse().map(x=>x.kind!=='eff'
+    ?`<tr style="opacity:.7"><td>${esc(fmt(x.d))}</td><td colspan="5" class="mut">${esc(x.label)} (tidak dihitung)</td></tr>`
+    :`<tr><td>${esc(fmt(x.d))}</td><td>${x.n===0?'<span class="tag err">Tidak input</span>':x.n<4?'<span class="tag warn">Kurang dari 4</span>':x.extra?'<span class="tag ok">Bonus</span>':'<span class="tag ok">Memenuhi</span>'}</td><td>${x.n}</td><td>${x.ok}</td><td>${Math.round((x.score||0)*100)}%</td><td>${x.extra?'+'+x.extra+'%':'-'}</td></tr>`).join('');
+  $('dmSum').innerHTML='<div class="card"><div class="row" style="gap:28px">'+stat.map(([l,v,c])=>`<div><div class="mut">${l}</div><b style="font-size:22px${c?';color:'+c:''}">${v}</b></div>`).join('')+`</div><div class="mut" style="margin-top:6px">${D.all?'Semua waktu':'Periode '+esc(fmt(D.from))+' s/d '+esc(fmt(D.to))} · menampilkan ${rows.length} dari ${D.tasks.length} kerjaan</div></div>`
+    +`<details class="card"><summary style="cursor:pointer"><b>Rincian KPI harian</b> <span class="mut">(klik untuk membuka)</span></summary><div class="mut" style="margin:8px 0">KPI = rata-rata skor harian di semua hari efektif + bonus (maks +10%). Skor harian = min(jumlah kerjaan, 4) ÷ 4 × persentase kerjaan beres sah; hari tanpa input bernilai 0. Bonus +1% untuk tiap kerjaan beres sah di atas 5 dalam sehari. Hari libur dan izin yang disetujui admin tidak dihitung.</div><div style="overflow-x:auto;max-height:360px"><table><thead><tr><th>Tanggal</th><th>Penilaian</th><th>Kerjaan</th><th>Beres sah</th><th>Skor hari</th><th>Bonus</th></tr></thead><tbody>${dayRows||'<tr><td colspan="6" class="mut">Belum ada hari efektif pada periode ini.</td></tr>'}</tbody></table></div></details>`;
   const rowH=t=>{
     const [c,lbl]=dmStatus(t),od=t.status!=='Done'&&t.task_date<td;
     const ago=Math.round((new Date(td+'T00:00:00Z')-new Date(t.task_date+'T00:00:00Z'))/864e5);
@@ -1575,7 +1683,10 @@ async function memLoad(all){
   try{
     const r=await rsPages(()=>sb.from('tasks').select('*').eq('member_id',D.u.id).gte('task_date',from).lte('task_date',to).order('task_date',{ascending:false}).order('created_at',{ascending:false}).order('id'));
     if(r.error){$('dmBody').innerHTML='';toast('Gagal memuat kerjaan: '+r.error.message,1);return}
-    D.tasks=r.data;D.from=from;D.to=to;D.all=!!all;renderMem();
+    D.tasks=r.data;D.from=from;D.to=to;D.all=!!all;
+    const ex=await sb.from('input_reasons').select('member_id,miss_date').eq('member_id',String(D.u.id)).eq('status','APPROVED').gte('miss_date',from).lte('miss_date',to).limit(5000);
+    if(!ex.error)(ex.data||[]).forEach(x=>S.excuse.add(rsKey(x.member_id,x.miss_date)));
+    renderMem();
   }finally{$('dmGo').disabled=false;$('dmAll').disabled=false}
 }
 function openMember(id){
@@ -1740,6 +1851,82 @@ $('sopList').addEventListener('change',async e=>{
   const {data,error}=await sb.from('sop_items').update({active:c.checked,updated_at:new Date().toISOString()}).eq('id',c.dataset.sact).select();
   if(error||!data.length){toast('Gagal mengubah status SOP',1);c.checked=!c.checked;return}
   toast(c.checked?'SOP diaktifkan':'SOP dinonaktifkan');await loadSop();renderSop();fillSop();
+});
+
+/* ---------- HARI LIBUR (diatur admin) & KPI HARIAN ---------- */
+S.holidays=new Map();S.holList=[];S.holidaysOk=true;S.excuse=new Set();
+async function loadHolidays(){
+  const r=await rsPages(()=>sb.from('holidays').select('*').order('hdate').order('id'));
+  if(r.error){console.warn('holidays belum bisa dimuat:',r.error.message);S.holidays=new Map();S.holList=[];S.holidaysOk=false;return}
+  S.holList=r.data;S.holidays=new Map(r.data.map(h=>[h.hdate,h.name]));S.holidaysOk=true;
+}
+/* hari yang alasannya sudah disetujui admin (sakit/izin/cuti) tidak dihitung sebagai hari efektif */
+async function loadExcuse(from,to){
+  const {data,error}=await sb.from('input_reasons').select('member_id,miss_date').eq('status','APPROVED').gte('miss_date',from).lte('miss_date',to).limit(5000);
+  S.excuse=new Set(error?[]:(data||[]).map(r=>rsKey(r.member_id,r.miss_date)));
+}
+/* KPI = rata-rata skor harian di semua hari efektif + bonus.
+   Skor harian = min(jumlah kerjaan, 4)/4 x (poin beres sah / poin maksimal hari itu); hari tanpa input = 0.
+   Bonus = +1% per kerjaan beres sah di atas 5 dalam sehari, maksimal +10%. */
+function kpiCalc(u,from,to,tasks){
+  const td=wib().date,start=from<MULAI_PAKAI?MULAI_PAKAI:from,last=to<td?to:td,cs=rsStart(u);
+  const by=new Map();
+  for(const t of tasks){if(!by.has(t.task_date))by.set(t.task_date,[]);by.get(t.task_date).push(t)}
+  const days=[];let E=0,H=0,sum=0,extra=0,tot=0;
+  for(let d=start;d<=last;d=addDays(d,1)){
+    if(HARI_LIBUR.includes(wdOf(d)))continue;
+    if(cs&&cs>MULAI_PAKAI&&d<=cs)continue;
+    const list=by.get(d)||[],hol=S.holidays.get(d);
+    if(hol){days.push({d,kind:'hol',label:'Libur: '+hol});continue}
+    if(d===td&&!list.length)continue; /* hari ini belum input: baru dinilai mulai H+1 */
+    if(!list.length&&S.excuse.has(rsKey(u.id,d))){days.push({d,kind:'exc',label:'Izin disetujui admin'});continue}
+    E++;
+    if(!list.length){days.push({d,kind:'eff',n:0,ok:0,score:0,extra:0});continue}
+    H++;tot+=list.length;
+    const mm=metrics(list),q=mm.max?mm.pts/mm.max:0,sc=Math.min(list.length,4)/4*q;
+    const okN=list.filter(t=>t.status==='Done'&&!isPend(t)&&proofOk(t)).length,ex=Math.max(0,okN-5);
+    sum+=sc;extra+=ex;days.push({d,kind:'eff',n:list.length,ok:okN,score:sc,extra:ex});
+  }
+  const base=E?sum/E*100:0,bonus=E?Math.min(10,extra):0;
+  return{E,H,tot,avg:H?tot/H:0,base,bonus,kpi:E?Math.round(base+bonus):null,days};
+}
+function kpiOverall(kp){
+  const v=kp.filter(k=>k.kpi!==null),n=v.length,H=v.reduce((a,k)=>a+k.H,0),E=v.reduce((a,k)=>a+k.E,0),tot=v.reduce((a,k)=>a+k.tot,0);
+  return{n,H,E,avg:H?tot/H:0,bonus:n?Math.round(v.reduce((a,k)=>a+k.bonus,0)/n):0,kpi:n?Math.round(v.reduce((a,k)=>a+k.kpi,0)/n):null};
+}
+
+/* --- Pengaturan hari libur (admin) --- */
+function renderHol(){
+  if(!isAdmin())return;
+  const box=$('hList');
+  if(!S.holidaysOk){box.innerHTML='<div class="mut">Tabel hari libur belum dibuat. Jalankan <b>holidays.sql</b> di Supabase SQL Editor.</div>';return}
+  const rows=[...S.holList].sort((a,b)=>b.hdate.localeCompare(a.hdate));
+  box.innerHTML=rows.length?`<div style="overflow-x:auto;max-height:320px"><table><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Ditambahkan oleh</th><th></th></tr></thead><tbody>${rows.map(h=>`<tr><td style="white-space:nowrap">${esc(fmt(h.hdate))}</td><td>${esc(h.name)}</td><td>${esc(h.created_by_name||'-')}</td><td><button class="btn r" data-hdel="${esc(String(h.id))}" type="button">Hapus</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="mut">Belum ada hari libur yang diatur.</div>';
+}
+async function holChanged(){await loadHolidays();renderHol();S.rec=null;await checkMissed();renderDash()}
+$('hAdd').onclick=async()=>{
+  const f=$('hFrom').value,t=$('hTo').value||f,name=$('hName').value.trim();
+  if(!f||!name){toast('Isi tanggal dan keterangan',1);return}
+  if(t<f){toast('Tanggal akhir sebelum tanggal awal',1);return}
+  if((Date.parse(t)-Date.parse(f))/864e5>30){toast('Maksimal 31 hari sekali input',1);return}
+  const rows=[];
+  for(let d=f;d<=t;d=addDays(d,1)){if(!HARI_LIBUR.includes(wdOf(d)))rows.push({hdate:d,name,created_by:String(S.me.id),created_by_name:S.me.name})}
+  if(!rows.length){toast('Tanggal itu jatuh di hari libur mingguan, tidak perlu diatur');return}
+  const b=$('hAdd');b.disabled=true;
+  try{
+    const {error}=await sb.from('holidays').upsert(rows,{onConflict:'hdate'});
+    if(error){toast('Gagal menyimpan: '+error.message+(/holidays/i.test(error.message)?' (jalankan holidays.sql di Supabase)':''),1);return}
+    $('hFrom').value='';$('hTo').value='';$('hName').value='';
+    toast(rows.length+' hari libur disimpan');await holChanged();
+  }finally{b.disabled=false}
+};
+$('hList').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-hdel]');if(!b)return;
+  const h=S.holList.find(x=>String(x.id)===b.dataset.hdel);
+  if(!h||!confirm('Hapus hari libur '+fmt(h.hdate)+' ('+h.name+')?'))return;
+  const {data,error}=await sb.from('holidays').delete().eq('id',h.id).select();
+  if(error||!data.length){toast('Gagal menghapus'+(error?': '+error.message:''),1);return}
+  toast('Hari libur dihapus');await holChanged();
 });
 
 /* ---------- START ---------- */
