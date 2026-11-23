@@ -187,7 +187,7 @@ body.mg .tabs button.on{background:linear-gradient(135deg,#0d9488,#14b8a6)}
   </section>
 
   <section id="t-plan" class="hidden">
-    <div id="lockNote" class="card hidden" style="background:var(--errb);border-color:#fecdd3">🔒 <b>Input kerjaan terkunci.</b> Kamu belum input kerjaan di hari kerja sebelumnya. Ajukan alasan di kotak merah di bagian atas, lalu tunggu persetujuan admin.</div>
+    <div id="lockNote" class="card hidden" style="background:var(--errb);border-color:#fecdd3">🔒 <b>Tanggal ini terkunci.</b> Kamu belum input kerjaan di tanggal tersebut. Ajukan alasan di kotak merah di bagian atas, lalu tunggu persetujuan admin. Tanggal lain tetap bisa diinput.</div>
     <div class="card">
       <div class="row sp"><h2>Input Rencana Kerjaan</h2><button id="bSop" class="btn o" type="button">Muat SOP saya (departemen + pribadi)</button></div>
       <form id="fAdd">
@@ -577,7 +577,7 @@ function mk(m,d,title,proof,prio,hint){
     member_id:m.id,category:m.division,title,priority:prio,proof_type:proof,target_output:hint||'',status:'In Progress',is_locked:false};
 }
 async function addRows(rows,d){
-  if(!await lockGate())return false;
+  if(!await lockGate(d))return false;
   const {error}=await sb.from('tasks').insert(rows);
   if(error){toast('Gagal menambah: '+error.message,1);return false}
   if(d<S.from){S.from=d;$('fromD').value=d}
@@ -1559,17 +1559,19 @@ async function lockRefresh(){
   S.lock={locked:days.length>0,days};
   return S.lock;
 }
+const lockedOn=d=>!isAdmin()&&S.lock.days.some(x=>x.date===d);
 function applyLockUI(){
-  const lk=!isAdmin()&&S.lock.locked;
+  const lk=lockedOn($('pDate').value||today());
   $('lockNote').classList.toggle('hidden',!lk);
   $('fAdd').querySelectorAll('button').forEach(b=>b.disabled=lk);
   $('bSop').disabled=lk;
 }
-async function lockGate(){
+async function lockGate(d){
   if(isAdmin())return true;
+  d=d||today();
   if(Date.now()-S.lockAt>5000)await lockRefresh();
   applyLockUI();renderUserBox();
-  if(S.lock.locked){toast('Input kerjaan terkunci: ajukan alasan dan tunggu persetujuan admin',1);return false}
+  if(lockedOn(d)){toast('Tanggal '+fmt(d)+' terkunci: ajukan alasan dan tunggu persetujuan admin',1);return false}
   return true;
 }
 function renderUserBox(){
@@ -1583,7 +1585,7 @@ function renderUserBox(){
     return`<div data-rsrow="1" style="margin-top:8px">${head}${rej}<div class="row" style="gap:8px;margin-top:4px"><input class="rsin" maxlength="300" placeholder="Alasan (mis. sakit, izin, libur, lupa input)" style="flex:1;min-width:180px"><button class="btn" data-rsave="1" data-m="${esc(String(S.me.id))}" data-d="${x.date}" type="button">${st==='REJECTED'?'Ajukan ulang':'Ajukan alasan'}</button></div></div>`;
   };
   box.style.background='var(--errb)';box.style.borderColor='#fecdd3';
-  box.innerHTML=`<div class="row sp"><div><b>🔒 Input kerjaan terkunci</b><div class="mut">Kamu belum input kerjaan pada ${L.days.length} hari kerja. Ajukan alasan untuk tiap tanggal; input terbuka lagi setelah admin menyetujui.</div></div><button class="btn o" data-mrec="1" type="button">Lihat rekap</button></div><div style="max-height:300px;overflow:auto">${L.days.map(rowU).join('')}</div>`;
+  box.innerHTML=`<div class="row sp"><div><b>🔒 ${L.days.length} tanggal terkunci</b><div class="mut">Kamu belum input kerjaan pada tanggal di bawah. Hanya tanggal itu yang terkunci, tanggal lain (termasuk hari ini) tetap bisa diinput. Ajukan alasan untuk tiap tanggal; tanggal terbuka lagi setelah admin menyetujui.</div></div><button class="btn o" data-mrec="1" type="button">Lihat rekap</button></div><div style="max-height:300px;overflow:auto">${L.days.map(rowU).join('')}</div>`;
   box.classList.remove('hidden');
 }
 async function renderAdminBox(){
@@ -1632,6 +1634,7 @@ async function rsClick(e){
   finally{b.disabled=false}
 }
 $('missBox').addEventListener('click',rsClick);
+$('pDate').addEventListener('change',applyLockUI);
 $('t-rec').addEventListener('click',rsClick);
 setInterval(tick,300000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.me)tick()});
