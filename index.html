@@ -2076,7 +2076,7 @@ $('cReset').onclick=async()=>{
   try{await cfgSave({...CFG_DEF},'Pengaturan dikembalikan ke bawaan')}finally{b.disabled=false}
 };
 
-/* ---------- PENGAJUAN IZIN (sebelum hari H) ---------- */
+/* ---------- PENGAJUAN IZIN (bisa sebelum atau pada hari H) ---------- */
 S.leaves=new Map();S.lvOk=true;
 const LV_KIND={IZIN:'Izin',SAKIT:'Sakit',CUTI:'Cuti'};
 async function loadLeaves(from,to,memberId){
@@ -2122,13 +2122,13 @@ async function afterLeave(){
   await loadExcuse(S.from,S.to);S.rec=null;await checkMissed();renderDash();
 }
 async function openLeave(){
-  const adm=isAdmin(),tmr=addDays(wib().date,1);
+  const adm=isAdmin(),tdy=wib().date;
   $('lvHint').textContent=adm
     ?'Setujui atau tolak pengajuan izin anggota. Izin yang disetujui tidak mengurangi KPI karena harinya tidak dihitung sebagai hari efektif. Kamu juga bisa mencatat izin atas nama anggota (langsung disetujui).'
-    :'Ajukan izin sebelum hari H (paling cepat untuk besok). Setelah disetujui admin, harimu tidak dihitung sebagai hari efektif sehingga KPI tidak berkurang.';
+    :'Ajukan izin bisa jauh-jauh hari atau di hari H itu sendiri (tidak bisa untuk tanggal yang sudah lewat). Setelah disetujui admin, harimu tidak dihitung sebagai hari efektif sehingga KPI tidak berkurang.';
   $('lvMemW').classList.toggle('hidden',!adm);
   if(adm)$('lvMem').innerHTML=S.users.filter(u=>u.role!=='ADMIN').map(u=>`<option value="${esc(String(u.id))}">${esc(u.name)} — ${esc(u.division)}</option>`).join('');
-  [$('lvFrom'),$('lvTo')].forEach(i=>{if(adm)i.removeAttribute('min');else i.min=tmr});
+  [$('lvFrom'),$('lvTo')].forEach(i=>{if(adm)i.removeAttribute('min');else i.min=tdy});
   renderLeave();
   await loadLeaves(MULAI_PAKAI,addDays(wib().date,400));
   renderLeave();updateLvBadge();
@@ -2138,7 +2138,7 @@ async function lvSend(){
   const from=$('lvFrom').value,to=$('lvTo').value||from;
   if(!from){toast('Isi tanggal izin',1);return}
   if(to<from){toast('Tanggal akhir sebelum tanggal awal',1);return}
-  if(!adm&&from<=td){toast('Izin harus diajukan sebelum hari H (mulai untuk besok)',1);return}
+  if(!adm&&from<td){toast('Izin tidak bisa diajukan untuk tanggal yang sudah lewat (mulai dari hari ini)',1);return}
   if((Date.parse(to)-Date.parse(from))/864e5>30){toast('Maksimal 31 hari per pengajuan',1);return}
   if(!reason){toast('Alasan wajib diisi',1);return}
   const mem=adm?S.users.find(u=>String(u.id)===$('lvMem').value):S.me;
