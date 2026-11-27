@@ -810,11 +810,20 @@ function rcard(r,ctx){
   /* tombol tinjau: pembuat request, atau admin untuk request apa pun yang menunggu konfirmasi */
   if((ctx==='out'||ctx==='all')&&r.status==='REVIEW'&&(r.from_user_id===me||admin))act=`<button class="btn" data-ra="confirm" data-rid="${r.id}" type="button">✔ Konfirmasi selesai</button><button class="btn o" data-ra="revise" data-rid="${r.id}" type="button">Minta revisi</button>`;
   if(admin)act+=`<button class="btn r" data-ra="del" data-rid="${r.id}" type="button">Hapus</button>`;
+  const hasL=!!(r.proof_link||'').trim(),hasI=!!r.proof_image_path,hasP=hasL||hasI;
+  const lnkH=()=>{const l=(r.proof_link||'').trim(),h=/^https?:\/\//i.test(l)?l:'https://'+l;return `<a href="${esc(h)}" target="_blank" rel="noopener">Buka link</a>`};
+  const imgH=`<button class="btn o" data-ra="rqview" data-rid="${r.id}" type="button">Lihat foto</button>`;
+  let proofH='';
+  if(ctx==='mine'&&(r.status==='ASSIGNED'||r.status==='REVIEW')){
+    proofH=`<div class="row"><b>Bukti pengerjaan:</b><input data-rqlink="${r.id}" value="${esc(r.proof_link||'')}" maxlength="500" placeholder="Tempel link hasil (Drive / Figma / dll)" style="flex:1;min-width:180px">${hasL?lnkH():''}${hasI?imgH:''}<button class="btn o" data-ra="rqup" data-rid="${r.id}" type="button">${hasI?'Ganti foto':'Upload foto'}</button>${hasP?'':'<span class="tag warn">Wajib link atau foto sebelum selesai</span>'}</div>`;
+  }else if(hasP||r.status==='REVIEW'||r.status==='DONE'){
+    proofH=`<div class="row"><b>Bukti pengerjaan:</b>${hasL?lnkH():''}${hasI?imgH:''}${hasP?'':'<span class="tag warn">Belum ada bukti dilampirkan</span>'}</div>`;
+  }
   const revNote=r.rev_note&&r.status==='ASSIGNED'?`<div><span class="tag err">Revisi diminta</span> <span class="mut">${esc(r.rev_note)}</span></div>`:'';
   return `<div class="task ${r.status==='DONE'?'lock':late?'od':''}">
     <div class="row sp"><div class="row"><span class="tag ${st[1]}">${esc(label)}</span><span class="tag">${esc(r.from_name)} (${esc(r.from_dept)}) → ${r.to_user_id?'👤 '+esc(r.to_user_name||'?')+' ('+esc(r.to_dept)+')':esc(r.to_dept)}</span>${late?'<span class="tag err">Lewat deadline</span>':''}</div><span class="mut">${esc(rqWhen(r.created_at))}</span></div>
     <div><b>${esc(r.title)}</b>${r.description?`<div class="mut" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.description)}</div>`:''}${r.deadline?`<div class="mut">Deadline: ${esc(fmt(r.deadline))}</div>`:''}</div>
-    ${revNote}${act?`<div class="row">${act}</div>`:''}</div>`;
+    ${proofH}${revNote}${act?`<div class="row">${act}</div>`:''}</div>`;
 }
 function renderReq(){
   if(!S.me)return;
@@ -894,7 +903,10 @@ async function syncReqFromTask(t,f){
   }
 }
 async function rqDone(id){
-  const r=S.req.get(id);if(!r)return;
+  let r=S.req.get(id);if(!r)return;
+  const inp=document.querySelector('input[data-rqlink="'+CSS.escape(id)+'"]');
+  if(inp&&inp.value.trim()!==(r.proof_link||'')){await rqUpd(id,{proof_link:inp.value.trim()||null},{assigned_to:meId()});r=S.req.get(id)||r}
+  if(!((r.proof_link||'').trim()||r.proof_image_path)){toast('Lampirkan bukti dulu (link atau foto) sebelum menandai selesai',1);return}
   if(r.task_id)await patch(r.task_id,{status:'Done',is_locked:true,review_status:isMg({member_id:S.me.id})?'PENDING':'NONE'});
   const cur=S.req.get(id);
   if(cur&&cur.status==='ASSIGNED'){
@@ -907,8 +919,9 @@ async function rqDone(id){
 async function rqRelease(id){
   const r=S.req.get(id);if(!r)return;
   if(!confirm('Lepas request ini? Request kembali ke antrian departemen dan kerjaan KPI-nya dihapus dari daftarmu.'))return;
-  const got=await rqUpd(id,{status:'OPEN',assigned_to:null,assigned_name:null,assigned_at:null,task_id:null,rev_note:null,done_at:null},{status:'ASSIGNED',assigned_to:meId()});
+  const got=await rqUpd(id,{status:'OPEN',assigned_to:null,assigned_name:null,assigned_at:null,task_id:null,rev_note:null,done_at:null,proof_link:null,proof_image_path:null},{status:'ASSIGNED',assigned_to:meId()});
   if(!got)return;
+  if(r.proof_image_path)sb.storage.from('proofs').remove([r.proof_image_path]);
   if(r.task_id){
     await sb.from('tasks').delete().eq('id',r.task_id);
     S.tasks=S.tasks.filter(t=>t.id!==r.task_id);S.carry=S.carry.filter(t=>t.id!==r.task_id);render();checkInput();
@@ -942,7 +955,9 @@ $('t-req').addEventListener('click',async e=>{
   const id=b.dataset.rid,a=b.dataset.ra;
   b.disabled=true;
   try{
-    if(a==='assign')await rqAssign(id);
+    if(a==='rqview')await viewReqProof(id);
+    else if(a==='rqup'){upId=null;rqUpId=id;$('fileIn').value='';$('fileIn').click()}
+    else if(a==='assign')await rqAssign(id);
     else if(a==='done')await rqDone(id);
     else if(a==='release')await rqRelease(id);
     else if(a==='cancel'){if(confirm('Batalkan request ini?'))await rqUpd(id,{status:'CANCELLED'},{status:'OPEN',from_user_id:meId()})}
@@ -950,12 +965,42 @@ $('t-req').addEventListener('click',async e=>{
     else if(a==='revise'){const n=prompt('Apa yang perlu direvisi?');if(n===null)return;if(!n.trim()){toast('Catatan revisi wajib diisi',1);return}await rqUpd(id,{status:'ASSIGNED',rev_note:n.trim(),done_at:null},rqRevCond())}
     else if(a==='del'){
       if(!isAdmin()||!confirm('Hapus request ini permanen?'))return;
+      const rr=S.req.get(id);
       const {error}=await sb.from('requests').delete().eq('id',id);
       if(error){toast('Gagal menghapus: '+error.message,1);return}
+      if(rr&&rr.proof_image_path)sb.storage.from('proofs').remove([rr.proof_image_path]);
       S.req.delete(id);renderReq();toast('Request dihapus');
     }
   }finally{b.disabled=false}
 });
+$('t-req').addEventListener('change',async e=>{
+  const el=e.target;if(!el.dataset||el.dataset.rqlink===undefined)return;
+  const id=el.dataset.rqlink,r=S.req.get(id);if(!r)return;
+  const v=el.value.trim();if(v===(r.proof_link||''))return;
+  const g=await rqUpd(id,{proof_link:v||null},{assigned_to:meId()});if(g)toast('Link bukti tersimpan');
+});
+let rqUpId=null;
+async function upReqProof(id,file){
+  const r=S.req.get(id);if(!r||r.assigned_to!==meId())return;
+  try{
+    toast('Mengunggah foto bukti...');
+    const blob=await compress(file);
+    const path=meId()+'/rq_'+id+'.jpg';
+    const {error}=await sb.storage.from('proofs').upload(path,blob,{contentType:'image/jpeg',upsert:true});
+    if(error)throw error;
+    const g=await rqUpd(id,{proof_image_path:path},{assigned_to:meId()});
+    if(g)toast('Foto bukti tersimpan');
+  }catch(err){toast('Gagal upload foto: '+err.message,1)}
+}
+async function viewReqProof(id){
+  const r=S.req.get(id);if(!r||!r.proof_image_path)return;
+  const {data,error}=await sb.storage.from('proofs').createSignedUrl(r.proof_image_path,300);
+  if(error){toast('Gagal membuka foto: '+error.message,1);return}
+  $('mImg').src=data.signedUrl;
+  $('mTitle').textContent=r.title;
+  $('mNote').textContent='Bukti dari '+(r.assigned_name||'-')+(r.description?' · Brief: '+r.description:'');
+  $('modal').classList.remove('hidden');
+}
 document.querySelectorAll('input[name="rqMode"]').forEach(r=>r.onchange=async()=>{
   const u=rqMode()==='user';$('rqDeptWrap').classList.toggle('hidden',u);$('rqUserWrap').classList.toggle('hidden',!u);
   if(u){await loadDir();renderReq()}
@@ -1082,7 +1127,7 @@ const onListClick=async e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.hide){S.carryHide.add(b.dataset.hide);saveHide();renderCarry();return}
   if(b.dataset.unhide){S.carryHide.delete(b.dataset.unhide);saveHide();renderCarry();return}
-  if(b.dataset.up){upId=b.dataset.up;$('fileIn').value='';$('fileIn').click();return}
+  if(b.dataset.up){rqUpId=null;upId=b.dataset.up;$('fileIn').value='';$('fileIn').click();return}
   if(b.dataset.view){viewProof(b.dataset.view);return}
   if(b.dataset.apr||b.dataset.rej){
     const id=b.dataset.apr||b.dataset.rej;if(!isAdmin())return;
@@ -1232,7 +1277,7 @@ async function viewProof(id){
   $('mNote').textContent='Keterangan: '+(t.notes||'-');
   $('modal').classList.remove('hidden');
 }
-$('fileIn').onchange=e=>{const f=e.target.files&&e.target.files[0];if(f&&upId)uploadProof(upId,f)};
+$('fileIn').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;if(rqUpId){const id=rqUpId;rqUpId=null;upReqProof(id,f)}else if(upId)uploadProof(upId,f)};
 $('mClose').onclick=()=>{$('modal').classList.add('hidden');$('mImg').src=''};
 $('modal').onclick=e=>{if(e.target.id==='modal')$('mClose').click()};
 
