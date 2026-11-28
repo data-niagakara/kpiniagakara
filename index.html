@@ -667,6 +667,7 @@ function card(t,carry){
     proof='<div class="row">'+(has?`<button class="btn o" data-view="${t.id}" type="button">Lihat foto</button>`:'<span class="tag warn">Wajib 1 foto</span>')
       +(edit?`<button class="btn o" data-up="${t.id}" type="button">${has?'Ganti foto':'Upload foto'}</button>`:'')+'</div>';
   }else proof='<span class="tag">Tanpa bukti</span>';
+  if(rq)proof=rqProofBox(rq,rq.assigned_to===meId()&&(rq.status==='ASSIGNED'||rq.status==='REVIEW'));
   const canDel=isAdmin()||(mine&&!t.is_locked);
   const selOn=S.selMode&&isAdmin()&&!carry,picked=selOn&&S.sel.has(t.id);
   const chk=selOn?`<input type="checkbox" data-sel="${t.id}" aria-label="Pilih kerjaan"${picked?' checked':''} style="width:20px;height:20px">`:'';
@@ -794,6 +795,31 @@ function onReqChange(p){
   renderReq();
 }
 function rqWhen(iso){return iso?new Date(iso).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):''}
+function rqProofBox(r,edit){
+  const hasL=!!(r.proof_link||'').trim(),hasI=!!r.proof_image_path,hasP=hasL||hasI;
+  const l=(r.proof_link||'').trim(),h=/^https?:\/\//i.test(l)?l:'https://'+l;
+  const lnkH=hasL?`<a href="${esc(h)}" target="_blank" rel="noopener">Buka link</a>`:'';
+  const imgH=hasI?`<button class="btn o" data-ra="rqview" data-rid="${r.id}" type="button">Lihat foto</button>`:'';
+  if(edit)return `<div class="row"><b>Bukti pengerjaan:</b><input data-rqlink="${r.id}" value="${esc(r.proof_link||'')}" maxlength="500" placeholder="Tempel link hasil (Drive / Figma / dll)" style="flex:1;min-width:180px">${lnkH}${imgH}<button class="btn o" data-ra="rqup" data-rid="${r.id}" type="button">${hasI?'Ganti foto':'Upload foto'}</button>${hasP?'':'<span class="tag warn">Wajib link atau foto sebelum selesai</span>'}</div>`;
+  if(hasP||r.status==='REVIEW'||r.status==='DONE')return `<div class="row"><b>Bukti pengerjaan:</b>${lnkH}${imgH}${hasP?'':'<span class="tag warn">Belum ada bukti dilampirkan</span>'}</div>`;
+  return '';
+}
+/* pastikan request milik task ini sudah punya bukti (baca juga isi input yang belum sempat tersimpan) */
+async function rqEnsureProof(taskId){
+  if(!S.req||!S.req.size)return true;
+  let r=[...S.req.values()].find(x=>x.task_id===taskId);
+  if(!r||r.assigned_to!==meId())return true;
+  const inp=document.querySelector('input[data-rqlink="'+CSS.escape(r.id)+'"]');
+  if(inp&&inp.value.trim()!==(r.proof_link||'')){await rqUpd(r.id,{proof_link:inp.value.trim()||null},{assigned_to:meId()});r=S.req.get(r.id)||r}
+  if((r.proof_link||'').trim()||r.proof_image_path)return true;
+  toast('Ini Request Task: isi link atau foto bukti dulu di kolom "Bukti pengerjaan" sebelum selesai',1);
+  return false;
+}
+async function rqLinkChange(el){
+  const id=el.dataset.rqlink,r=S.req.get(id);if(!r)return;
+  const v=el.value.trim();if(v===(r.proof_link||''))return;
+  const g=await rqUpd(id,{proof_link:v||null},{assigned_to:meId()});if(g)toast('Link bukti tersimpan');
+}
 function rcard(r,ctx){
   const st=RQ_ST[r.status]||[r.status,''];
   const me=meId(),admin=isAdmin();
@@ -810,15 +836,7 @@ function rcard(r,ctx){
   /* tombol tinjau: pembuat request, atau admin untuk request apa pun yang menunggu konfirmasi */
   if((ctx==='out'||ctx==='all')&&r.status==='REVIEW'&&(r.from_user_id===me||admin))act=`<button class="btn" data-ra="confirm" data-rid="${r.id}" type="button">✔ Konfirmasi selesai</button><button class="btn o" data-ra="revise" data-rid="${r.id}" type="button">Minta revisi</button>`;
   if(admin)act+=`<button class="btn r" data-ra="del" data-rid="${r.id}" type="button">Hapus</button>`;
-  const hasL=!!(r.proof_link||'').trim(),hasI=!!r.proof_image_path,hasP=hasL||hasI;
-  const lnkH=()=>{const l=(r.proof_link||'').trim(),h=/^https?:\/\//i.test(l)?l:'https://'+l;return `<a href="${esc(h)}" target="_blank" rel="noopener">Buka link</a>`};
-  const imgH=`<button class="btn o" data-ra="rqview" data-rid="${r.id}" type="button">Lihat foto</button>`;
-  let proofH='';
-  if(ctx==='mine'&&(r.status==='ASSIGNED'||r.status==='REVIEW')){
-    proofH=`<div class="row"><b>Bukti pengerjaan:</b><input data-rqlink="${r.id}" value="${esc(r.proof_link||'')}" maxlength="500" placeholder="Tempel link hasil (Drive / Figma / dll)" style="flex:1;min-width:180px">${hasL?lnkH():''}${hasI?imgH:''}<button class="btn o" data-ra="rqup" data-rid="${r.id}" type="button">${hasI?'Ganti foto':'Upload foto'}</button>${hasP?'':'<span class="tag warn">Wajib link atau foto sebelum selesai</span>'}</div>`;
-  }else if(hasP||r.status==='REVIEW'||r.status==='DONE'){
-    proofH=`<div class="row"><b>Bukti pengerjaan:</b>${hasL?lnkH():''}${hasI?imgH:''}${hasP?'':'<span class="tag warn">Belum ada bukti dilampirkan</span>'}</div>`;
-  }
+  const proofH=rqProofBox(r,ctx==='mine'&&(r.status==='ASSIGNED'||r.status==='REVIEW'));
   const revNote=r.rev_note&&r.status==='ASSIGNED'?`<div><span class="tag err">Revisi diminta</span> <span class="mut">${esc(r.rev_note)}</span></div>`:'';
   return `<div class="task ${r.status==='DONE'?'lock':late?'od':''}">
     <div class="row sp"><div class="row"><span class="tag ${st[1]}">${esc(label)}</span><span class="tag">${esc(r.from_name)} (${esc(r.from_dept)}) → ${r.to_user_id?'👤 '+esc(r.to_user_name||'?')+' ('+esc(r.to_dept)+')':esc(r.to_dept)}</span>${late?'<span class="tag err">Lewat deadline</span>':''}</div><span class="mut">${esc(rqWhen(r.created_at))}</span></div>
@@ -872,7 +890,7 @@ async function rqUpd(id,f,cond){
   const {data,error}=await q.select();
   if(error){toast('Gagal: '+error.message,1);return null}
   if(!data.length){toast('Status request sudah berubah, data dimuat ulang',1);await loadRequests();return null}
-  S.req.set(id,data[0]);renderReq();return data[0];
+  S.req.set(id,data[0]);renderReq();if(S.tasks)render();return data[0];
 }
 async function rqAssign(id){
   const r=S.req.get(id);if(!r)return;
@@ -973,12 +991,7 @@ $('t-req').addEventListener('click',async e=>{
     }
   }finally{b.disabled=false}
 });
-$('t-req').addEventListener('change',async e=>{
-  const el=e.target;if(!el.dataset||el.dataset.rqlink===undefined)return;
-  const id=el.dataset.rqlink,r=S.req.get(id);if(!r)return;
-  const v=el.value.trim();if(v===(r.proof_link||''))return;
-  const g=await rqUpd(id,{proof_link:v||null},{assigned_to:meId()});if(g)toast('Link bukti tersimpan');
-});
+$('t-req').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.rqlink!==undefined)rqLinkChange(e.target)});
 let rqUpId=null;
 async function upReqProof(id,file){
   const r=S.req.get(id);if(!r||r.assigned_to!==meId())return;
@@ -1118,7 +1131,12 @@ $('t-pk').addEventListener('click',e=>{
 const onListChange=e=>{
   const el=e.target;
   if(el.dataset.sel)toggleSel(el.dataset.sel,el.checked,el.closest('.task'));
-  else if(el.dataset.st)patch(el.dataset.st,{status:el.value});
+  else if(el.dataset.rqlink!==undefined)rqLinkChange(el);
+  else if(el.dataset.st){
+    const id=el.dataset.st,v=el.value;
+    if(v==='Done'){rqEnsureProof(id).then(ok=>{if(ok)patch(id,{status:v});else render()})}
+    else patch(id,{status:v});
+  }
   else if(el.dataset.lnk)patch(el.dataset.lnk,{proof_link:el.value.trim()});
   else if(el.dataset.nt)patch(el.dataset.nt,{notes:el.value});
 };
@@ -1127,6 +1145,8 @@ const onListClick=async e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.hide){S.carryHide.add(b.dataset.hide);saveHide();renderCarry();return}
   if(b.dataset.unhide){S.carryHide.delete(b.dataset.unhide);saveHide();renderCarry();return}
+  if(b.dataset.ra==='rqview'){viewReqProof(b.dataset.rid);return}
+  if(b.dataset.ra==='rqup'){upId=null;rqUpId=b.dataset.rid;$('fileIn').value='';$('fileIn').click();return}
   if(b.dataset.up){rqUpId=null;upId=b.dataset.up;$('fileIn').value='';$('fileIn').click();return}
   if(b.dataset.view){viewProof(b.dataset.view);return}
   if(b.dataset.apr||b.dataset.rej){
@@ -1142,6 +1162,7 @@ const onListClick=async e=>{
   }
   if(b.dataset.lock){
     const t=findT(b.dataset.lock);if(!t)return;
+    if(!t.is_locked&&!await rqEnsureProof(t.id))return;
     await patch(t.id,t.is_locked?{is_locked:false,review_status:'NONE'}:{status:'Done',is_locked:true,review_status:isMg(t)?'PENDING':'NONE'});
   }else if(b.dataset.del){
     if(!confirm('Hapus kerjaan ini?'))return;
